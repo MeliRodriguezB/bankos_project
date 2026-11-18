@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # bankos_project / develop branch
 =======
 
