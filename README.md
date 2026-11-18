@@ -1,5 +1,5 @@
 <<<<<<< HEAD
-# bankos_project / develop branch
+# bankos_project / main branch
 =======
 
 A new Flutter project.
