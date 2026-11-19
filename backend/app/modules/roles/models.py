@@ -1,8 +1,10 @@
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import (
     Boolean,
     Column,
+    DateTime,
     ForeignKey,
     ForeignKeyConstraint,
     String,
@@ -10,6 +12,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     Uuid,
+    func,
     text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
@@ -74,6 +77,9 @@ class Role(Base):
     description: Mapped[str | None] = mapped_column(Text)
     is_system: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("FALSE")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
 
