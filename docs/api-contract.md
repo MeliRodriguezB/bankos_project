@@ -389,5 +389,5 @@ Antes de considerar este contrato definitivo, se deben acordar los siguientes pu
 
 ---
 
-**Autora:** Melissa Rodriguez
+
 
