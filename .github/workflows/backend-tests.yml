@@ -33,4 +33,4 @@ jobs:
           ENVIRONMENT: test
           DATABASE_URL: sqlite:///./test.db
           SECRET_KEY: test-secret-key-with-at-least-32-characters
-        run: pytest -q
+        run: PYTHONPATH=. pytest -q
