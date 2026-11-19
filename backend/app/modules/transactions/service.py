@@ -129,7 +129,17 @@ class TransactionService:
             ).first()
 
             if existing_tx:
-                # Retorna exactamente la respuesta anterior sin volver a mover dinero
+                same_request = (
+                    existing_tx.type == "TRANSFER"
+                    and existing_tx.source_account_id == data.source_account_id
+                    and existing_tx.amount == data.amount
+                    and existing_tx.description == (data.description or f"Transferencia a cuenta {existing_tx.description.split()[-1] if existing_tx.description else ''}")
+                )
+                if not same_request:
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail="La Idempotency-Key ya fue utilizada con datos diferentes.",
+                    )
                 return cls._to_response(existing_tx)
 
         # --- 2. Verificación de Doble Factor (PIN) ---
@@ -235,6 +245,17 @@ class TransactionService:
                 Transaction.idempotency_key == idempotency_key
             ).first()
             if existing:
+                same_request = (
+                    existing.type == "DEPOSIT"
+                    and existing.destination_account_id == data.account_id
+                    and existing.amount == data.amount
+                    and existing.description == (data.description or "Depósito de fondos")
+                )
+                if not same_request:
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail="La Idempotency-Key ya fue utilizada con datos diferentes.",
+                    )
                 return cls._to_response(existing)
 
         account = db.query(Account).filter(
@@ -293,6 +314,17 @@ class TransactionService:
                 Transaction.idempotency_key == idempotency_key
             ).first()
             if existing:
+                same_request = (
+                    existing.type == "WITHDRAWAL"
+                    and existing.source_account_id == data.account_id
+                    and existing.amount == data.amount
+                    and existing.description == (data.description or "Retiro de efectivo")
+                )
+                if not same_request:
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail="La Idempotency-Key ya fue utilizada con datos diferentes.",
+                    )
                 return cls._to_response(existing)
 
         if data.pin != "1234":
