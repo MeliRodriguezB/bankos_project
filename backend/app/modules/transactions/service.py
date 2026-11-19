@@ -130,12 +130,22 @@ class TransactionService:
             ).first()
 
             if existing_tx:
+                destination = db.query(Account).filter(
+                    Account.account_number == data.destination_account_number,
+                    Account.tenant_id == tenant_id,
+                ).first()
                 same_request = (
                     existing_tx.type == "TRANSFER"
                     and existing_tx.source_account_id == data.source_account_id
+                    and existing_tx.destination_account_id == (destination.id if destination else None)
                     and existing_tx.amount == data.amount
-                    and (data.description is None or existing_tx.description == data.description)
                     and existing_tx.currency == data.currency.upper()
+                    and existing_tx.description == (
+                        data.description or (
+                            f"Transferencia a cuenta {destination.account_number_masked}"
+                            if destination else None
+                        )
+                    )
                 )
                 if not same_request:
                     raise HTTPException(
@@ -265,6 +275,7 @@ class TransactionService:
                     existing.type == "DEPOSIT"
                     and existing.destination_account_id == data.account_id
                     and existing.amount == data.amount
+                    and existing.currency == data.currency.upper()
                     and existing.description == (data.description or "Depósito de fondos")
                 )
                 if not same_request:
@@ -346,6 +357,7 @@ class TransactionService:
                     existing.type == "WITHDRAWAL"
                     and existing.source_account_id == data.account_id
                     and existing.amount == data.amount
+                    and existing.currency == data.currency.upper()
                     and existing.description == (data.description or "Retiro de efectivo")
                 )
                 if not same_request:
