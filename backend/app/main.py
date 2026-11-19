@@ -15,6 +15,7 @@ app = FastAPI(
 # Endpoint básico para comprobar que la API está funcionando
 @app.get("/health", tags=["Health"])
 def health_check():
+    """Devuelve el estado básico de disponibilidad de la API."""
     return {
         "status": "ok",
         "application": "BankOS",
