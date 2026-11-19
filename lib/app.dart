@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'core/theme/app_theme.dart';
-import 'features/dashboard/presentation/screens/dashboard_screen.dart';
+import 'features/auth/presentation/screens/login_screen.dart';
 
 class BankOsApp extends StatefulWidget {
   const BankOsApp({super.key});
@@ -23,7 +23,7 @@ class _BankOsAppState extends State<BankOsApp> {
       title: 'BankOS',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const DashboardScreen(),
+      home: const LoginScreen(),
     );
   }
 }

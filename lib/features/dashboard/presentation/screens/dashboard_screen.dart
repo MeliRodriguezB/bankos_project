@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../auth/presentation/screens/login_screen.dart';
+import '../../../transactions/data/repositories/transaction_repository.dart';
+import '../../../transactions/presentation/screens/deposit_screen.dart';
+import '../../../transactions/presentation/screens/history_screen.dart';
+import '../../../transactions/presentation/screens/transfer_screen.dart';
 import '../../data/models/account_model.dart';
 import '../../data/models/dashboard_model.dart';
 import '../../data/repositories/dashboard_repository.dart';
@@ -13,8 +19,13 @@ import 'account_detail_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final DashboardRepository? repository;
+  final TransactionRepository? transactionRepository;
 
-  const DashboardScreen({super.key, this.repository});
+  const DashboardScreen({
+    super.key,
+    this.repository,
+    this.transactionRepository,
+  });
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -22,6 +33,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   late DashboardRepository _repository;
+  late TransactionRepository _txRepository;
   bool _useMock = false;
 
   DashboardModel? _dashboardData;
@@ -34,6 +46,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _repository = widget.repository ?? ApiDashboardRepository();
+    _txRepository = widget.transactionRepository ?? ApiTransactionRepository();
     _fetchDashboard();
   }
 
@@ -41,6 +54,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       _useMock = !_useMock;
       _repository = _useMock ? MockDashboardRepository() : ApiDashboardRepository();
+      _txRepository = _useMock ? MockTransactionRepository() : ApiTransactionRepository();
       _isLoading = true;
     });
     _fetchDashboard();
@@ -75,7 +89,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
     } catch (e) {
       if (mounted) {
-        // Si la API falla (ej. contenedor backend aún no levantado), sugerir el switch al mock
         setState(() {
           _isLoading = false;
           _errorMessage = e.toString();
@@ -93,8 +106,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ),
     );
-    // Refrescar al volver por si se desactivó la cuenta
     _fetchDashboard();
+  }
+
+  void _handleLogout() {
+    // Limpieza de sesión
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => const LoginScreen(),
+      ),
+    );
   }
 
   @override
@@ -123,7 +144,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
         actions: [
-          // Switch de conveniencia para jueces y evaluación técnica (Mock vs Real API)
+          // Switch Mock / Real API
           Tooltip(
             message: _useMock ? 'Cambiar a Backend FastAPI' : 'Cambiar a Datos Mock',
             child: TextButton.icon(
@@ -144,9 +165,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.notifications_none_rounded),
-            onPressed: () {},
-            tooltip: 'Notificaciones',
+            icon: const Icon(Icons.logout_rounded),
+            tooltip: 'Cerrar Sesión',
+            onPressed: _handleLogout,
           ),
         ],
       ),
@@ -188,7 +209,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(20),
         children: [
-          // 1. Cabecera con resumen de saldos por divisa y tenant
+          // 1. Cabecera con resumen financiero por divisa y tenant
           BalanceHeaderCard(
             userName: data.userName,
             tenantName: data.tenantName,
@@ -200,8 +221,57 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 24),
 
-          // 2. Barra de accesos directos (Transferir, Depositar, Retirar, Historial)
-          const QuickActionsBar(),
+          // 2. Barra de accesos directos vinculada con Persona 3
+          QuickActionsBar(
+            onTransfer: () async {
+              final activeAccounts = data.accounts.where((a) => a.isActive).toList();
+              if (activeAccounts.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('No tienes cuentas activas para transferir.')),
+                );
+                return;
+              }
+              final success = await Navigator.push<bool>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => TransferScreen(
+                    availableAccounts: activeAccounts,
+                    repository: _txRepository,
+                  ),
+                ),
+              );
+              if (success == true) _fetchDashboard();
+            },
+            onDeposit: () async {
+              final activeAccounts = data.accounts.where((a) => a.isActive).toList();
+              final success = await Navigator.push<bool>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => DepositScreen(
+                    availableAccounts: activeAccounts,
+                    repository: _txRepository,
+                  ),
+                ),
+              );
+              if (success == true) _fetchDashboard();
+            },
+            onWithdraw: () async {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Usa los cajeros automáticos o la pantalla de transferencia para mover fondos.'),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            onHistory: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => HistoryScreen(repository: _txRepository),
+                ),
+              );
+            },
+          ),
           const SizedBox(height: 28),
 
           // 3. Listado de cuentas bancarias

@@ -25,3 +25,6 @@ redis
 
 # Migraciones y control de versiones del esquema de la BD
 alembic
+
+# Validación de correos electrónicos en Pydantic
+email-validator
