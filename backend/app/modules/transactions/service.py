@@ -4,6 +4,7 @@ from typing import Optional
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
+from sqlalchemy.exc import IntegrityError
 
 from app.modules.accounts.models import Account
 from app.modules.transactions.models import Transaction
@@ -221,6 +222,14 @@ class TransactionService:
             db.refresh(tx)
             return cls._to_response(tx)
 
+        except IntegrityError:
+            # La restricción única resuelve la carrera entre solicitudes concurrentes.
+            # Se revierte todo el débito/crédito; el cliente puede reintentar la misma clave.
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="La clave de idempotencia acaba de procesarse. Reintenta con la misma clave.",
+            )
         except Exception as e:
             db.rollback()
             raise HTTPException(
@@ -293,9 +302,15 @@ class TransactionService:
             db.commit()
             db.refresh(tx)
             return cls._to_response(tx)
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="La clave de idempotencia acaba de procesarse. Reintenta con la misma clave.",
+            )
         except Exception as e:
             db.rollback()
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail="No fue posible completar la operación.")
 
     @classmethod
     def process_withdrawal(
@@ -363,9 +378,15 @@ class TransactionService:
             db.commit()
             db.refresh(tx)
             return cls._to_response(tx)
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="La clave de idempotencia acaba de procesarse. Reintenta con la misma clave.",
+            )
         except Exception as e:
             db.rollback()
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail="No fue posible completar la operación.")
 
     @classmethod
     def get_history(
