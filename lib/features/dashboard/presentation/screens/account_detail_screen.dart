@@ -113,11 +113,14 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
       appBar: AppBar(
         title: const Text('Detalle de Cuenta'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
             // Tarjeta principal con saldo y estado
             Container(
               width: double.infinity,
@@ -281,7 +284,9 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
           ],
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 
   Widget _buildDetailRow({

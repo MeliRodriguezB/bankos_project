@@ -122,14 +122,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
+        titleSpacing: 20,
         title: Row(
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: AppTheme.primary,
-                borderRadius: BorderRadius.circular(8),
+                gradient: AppTheme.accentGradient,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.accent.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
               child: const Text(
                 'BankOS',
@@ -137,42 +146,89 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   color: Colors.white,
                   fontWeight: FontWeight.w900,
                   fontSize: 14,
+                  letterSpacing: 0.5,
                 ),
               ),
             ),
-            const SizedBox(width: 8),
-            const Text('Panel Principal'),
+            const SizedBox(width: 10),
+            const Text(
+              'Panel Principal',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.textPrimary,
+                letterSpacing: -0.4,
+              ),
+            ),
           ],
         ),
         actions: [
-          // Switch Mock / Real API
-          Tooltip(
-            message: _useMock ? 'Cambiar a Backend FastAPI' : 'Cambiar a Datos Mock',
-            child: TextButton.icon(
-              onPressed: _toggleRepositorySource,
-              icon: Icon(
-                _useMock ? Icons.cloud_off : Icons.cloud_done,
-                size: 16,
-                color: _useMock ? Colors.amber.shade800 : AppTheme.success,
-              ),
-              label: Text(
-                _useMock ? 'MOCK' : 'API',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: _useMock ? Colors.amber.shade800 : AppTheme.success,
+          // Switch Mock / Real API estilizado en cápsula moderna
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppTheme.border),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: _toggleRepositorySource,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _useMock ? Colors.amber.shade800 : AppTheme.success,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _useMock ? 'MOCK' : 'API',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: _useMock ? Colors.amber.shade900 : AppTheme.success,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
+          const SizedBox(width: 8),
+
+          // Botón de Cerrar Sesión
           IconButton(
-            icon: const Icon(Icons.logout_rounded),
+            icon: const Icon(Icons.logout_rounded, color: AppTheme.textSecondary, size: 20),
             tooltip: 'Cerrar Sesión',
             onPressed: _handleLogout,
           ),
+          const SizedBox(width: 12),
         ],
       ),
-      body: _buildBody(),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: _buildBody(),
+        ),
+      ),
     );
   }
 
@@ -208,7 +264,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       color: AppTheme.accent,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         children: [
           // 1. Cabecera con resumen financiero por divisa y tenant
           BalanceHeaderCard(
@@ -222,7 +278,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 24),
 
-          // 2. Barra de accesos directos vinculada con Persona 3
+          // 2. Barra de accesos directos moderna
           QuickActionsBar(
             onTransfer: () async {
               final activeAccounts = data.accounts.where((a) => a.isActive).toList();
@@ -275,31 +331,52 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 28),
 
-          // 3. Listado de cuentas bancarias
+          // 3. Cabecera de la sección "Mis Cuentas"
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Mis Cuentas',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
-                ),
+              Row(
+                children: [
+                  const Text(
+                    'Mis Cuentas',
+                    style: TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.textPrimary,
+                      letterSpacing: -0.4,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppTheme.accent.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '${data.accounts.length}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.accent,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               Text(
                 '${data.accounts.length} ${data.accounts.length == 1 ? 'cuenta' : 'cuentas'}',
                 style: const TextStyle(
                   fontSize: 13,
                   color: AppTheme.textSecondary,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
-          // Tarjetas de cuentas
+          // Tarjetas de cuentas bancarias
           ...data.accounts.map((acc) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: AccountCard(
@@ -308,6 +385,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   onTap: () => _openAccountDetail(acc),
                 ),
               )),
+          const SizedBox(height: 20),
         ],
       ),
     );

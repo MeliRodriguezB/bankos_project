@@ -56,7 +56,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
       appBar: AppBar(
         title: const Text('Historial de Movimientos'),
       ),
-      body: Column(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: Column(
         children: [
           // Barra de Filtros Rápidos (Chips)
           SingleChildScrollView(
@@ -82,7 +85,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ),
         ],
       ),
-    );
+    ),
+  ),
+);
   }
 
   Widget _buildFilterChip(String label, String? typeValue) {

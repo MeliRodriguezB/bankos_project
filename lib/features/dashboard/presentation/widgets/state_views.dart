@@ -6,23 +6,53 @@ class DashboardLoadingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(
-            strokeWidth: 3,
-            color: AppTheme.accent,
-          ),
-          SizedBox(height: 16),
-          Text(
-            'Cargando información financiera...',
-            style: TextStyle(
-              color: AppTheme.textSecondary,
-              fontSize: 14,
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.accent.withOpacity(0.12),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: const SizedBox(
+                width: 32,
+                height: 32,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  color: AppTheme.accent,
+                ),
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 20),
+            const Text(
+              'Cargando información financiera...',
+              style: TextStyle(
+                color: AppTheme.textPrimary,
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Sincronizando cuentas con la institución',
+              style: TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -49,14 +79,14 @@ class DashboardErrorView extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 color: const Color(0xFFFEE2E2),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.cloud_off_rounded,
-                size: 44,
+                size: 42,
                 color: AppTheme.error,
               ),
             ),
@@ -65,8 +95,9 @@ class DashboardErrorView extends StatelessWidget {
               'No pudimos consultar tus cuentas',
               style: TextStyle(
                 fontSize: 18,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w800,
                 color: AppTheme.textPrimary,
+                letterSpacing: -0.4,
               ),
               textAlign: TextAlign.center,
             ),
@@ -80,13 +111,20 @@ class DashboardErrorView extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             if (correlationId != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                'ID de rastreo: $correlationId',
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontFamily: 'monospace',
-                  color: AppTheme.textSecondary,
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceElevated,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'ID: $correlationId',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontFamily: 'monospace',
+                    color: AppTheme.textSecondary,
+                  ),
                 ),
               ),
             ],
@@ -95,6 +133,13 @@ class DashboardErrorView extends StatelessWidget {
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded, size: 18),
               label: const Text('Reintentar'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primary,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
             ),
           ],
         ),
@@ -117,25 +162,34 @@ class DashboardEmptyView extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(16),
+              width: 80,
+              height: 80,
               decoration: BoxDecoration(
-                color: AppTheme.background,
+                color: Colors.white,
                 shape: BoxShape.circle,
-                border: Border.all(color: AppTheme.border),
+                border: Border.all(color: AppTheme.border, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
               ),
               child: const Icon(
                 Icons.account_balance_wallet_outlined,
-                size: 44,
+                size: 38,
                 color: AppTheme.textSecondary,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             const Text(
               'Aún no tienes cuentas registradas',
               style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
                 color: AppTheme.textPrimary,
+                letterSpacing: -0.4,
               ),
               textAlign: TextAlign.center,
             ),
@@ -149,11 +203,18 @@ class DashboardEmptyView extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             if (onRefresh != null) ...[
-              const SizedBox(height: 20),
-              TextButton.icon(
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
                 onPressed: onRefresh,
-                icon: const Icon(Icons.refresh, size: 16),
+                icon: const Icon(Icons.refresh_rounded, size: 18),
                 label: const Text('Actualizar'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
               ),
             ],
           ],
