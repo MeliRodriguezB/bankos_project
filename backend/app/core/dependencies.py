@@ -41,16 +41,26 @@ def get_current_user(
     )
 
     if not credentials:
-        # En modo desarrollo, si no hay token aún porque Persona 1 está desarrollando el login,
-        # proveemos un usuario mock por defecto para que Persona 2 y 3 puedan avanzar y probar.
+        # En modo desarrollo, si la petición se prueba sin token, se enlaza al usuario de demostración
+        # real con sus cuentas activas en la BD (Carlos Mendoza en Cooperativa Futuro).
         if settings.ENVIRONMENT == "development":
-            return {
-                "user_id": "usr-dev-101",
-                "email": "carlos.mendoza@banco-demo.com",
-                "name": "Carlos Mendoza",
-                "tenant_id": "tenant-coop-01",
-                "role": "cliente"
-            }
+            db = SessionLocal()
+            try:
+                from app.modules.users.models import User
+                from app.modules.tenants.models import Tenant
+                user = db.query(User).filter(User.email == "carlos@fintech.com").first()
+                tenant = db.query(Tenant).filter(Tenant.slug == "cooperativa-futuro").first()
+                if user and tenant:
+                    return {
+                        "user_id": str(user.id),
+                        "email": user.email,
+                        "name": user.full_name,
+                        "tenant_id": str(tenant.id),
+                        "role": "CUSTOMER",
+                        "roles": ["CUSTOMER"],
+                    }
+            finally:
+                db.close()
         raise credentials_exception
 
     try:
