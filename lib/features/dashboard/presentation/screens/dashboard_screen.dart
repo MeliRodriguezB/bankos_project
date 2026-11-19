@@ -111,6 +111,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _handleLogout() {
     // Limpieza de sesión
+    ApiClient.setGlobalAuthToken(null);
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => const LoginScreen(),

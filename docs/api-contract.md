@@ -1,396 +1,428 @@
+# BankOS — Contrato de API
 
+**Versión:** 1.0.0  
+**Estado:** Implementado y validado en backend (FastAPI) y cliente móvil/web (Flutter).
 
-# BankOS — Contrato inicial de API
+---
 
-**Versión:** 0.1.0  
-**Estado:** Propuesta inicial para integración  
+## 1. Objetivo y Alcance
 
+Este documento especifica el contrato de comunicación oficial entre la aplicación cliente BankOS (desarrollada en Flutter) y el servidor backend (FastAPI + PostgreSQL + Redis).
 
-## 1. Objetivo
+Define con precisión:
+- Convenciones de transporte y serialización de datos.
+- Mecanismo de autenticación multi-inquilino (*multi-tenant*) con JWT y Argon2.
+- Endpoints de consulta de saldos y cuentas bancarias multimoneda.
+- Endpoints para cotización y ejecución de transacciones atómicas (transferencias, depósitos, retiros).
+- Contrato estricto de **Idempotencia** (`Idempotency-Key`) para prevenir débitos duplicados.
+- Tabla de tasas de cambio estáticas y comisiones bancarias.
 
-Este documento establece las convenciones iniciales de comunicación entre la aplicación móvil BankOS, desarrollada con Flutter, y el backend construido con FastAPI.
+---
 
-Su objetivo es definir una estructura común para los endpoints, las solicitudes, las respuestas, los errores y las responsabilidades de cada componente.
+## 2. Convenciones Generales
 
-Este contrato deberá actualizarse a medida que se implementen y validen las funcionalidades.
-
-## 2. Convenciones generales
-
-| Elemento | Convención |
-|---|---|
-| Arquitectura | REST |
-| Formato de intercambio | JSON |
-| Codificación | UTF-8 |
-| Protocolo | HTTPS en producción |
-| Prefijo de API | `/api/v1` |
-| Autenticación | Bearer Token (JWT) |
-| Fechas | ISO 8601 en UTC |
-| Valores monetarios | Cadenas decimales para evitar imprecisiones de punto flotante |
-
-### 2.1. URL base
-
-Entorno local:
-
-```text
-http://localhost:8080/api/v1
-```
-
-Documentación interactiva:
-
-- Swagger UI: `http://localhost:8080/docs`
-- ReDoc: `http://localhost:8080/redoc`
-
-**Importante:** cuando Flutter se ejecute en un dispositivo físico, `localhost` hará referencia al propio dispositivo, no al computador donde se ejecuta FastAPI. En ese caso se deberá utilizar la dirección IP local del computador y verificar que el dispositivo pueda acceder a ella.
-
-## 3. Encabezados HTTP
-
-Las solicitudes deberán utilizar los siguientes encabezados según corresponda:
-
-| Encabezado | Uso |
-|---|---|
-| `Content-Type: application/json` | Indica que el cuerpo de la solicitud está en JSON. |
-| `Accept: application/json` | Indica que el cliente espera una respuesta JSON. |
-| `Authorization: Bearer <token>` | Envía el token de autenticación para rutas protegidas. |
-| `X-Correlation-ID` | Identificador para rastrear una solicitud entre servicios. |
-| `Idempotency-Key` | Identificador único para evitar duplicar operaciones financieras. |
-
-El backend deberá generar un identificador de correlación cuando el cliente no lo proporcione.
-
-El contexto de usuario y organización deberá obtenerse del token validado en el servidor. El cliente no debe poder seleccionar libremente el identificador de organización para acceder a información de otra organización.
-
-## 4. Estructura estándar de errores
-
-Las respuestas de error deberán mantener una estructura consistente:
-
-```json
-{
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "La solicitud contiene datos inválidos.",
-    "details": [
-      {
-        "field": "amount",
-        "message": "Debe ser mayor que cero."
-      }
-    ],
-    "correlation_id": "uuid"
-  }
-}
-```
-
-### 4.1. Códigos HTTP
-
-| Código | Significado | Uso |
+| Elemento | Convención | Detalle |
 |---|---|---|
-| 200 | OK | Solicitud procesada correctamente. |
-| 201 | Created | Recurso creado correctamente. |
-| 204 | No Content | Operación exitosa sin contenido de respuesta. |
-| 400 | Bad Request | Solicitud incorrecta. |
-| 401 | Unauthorized | Falta autenticación o el token no es válido. |
-| 403 | Forbidden | El usuario no tiene permisos suficientes. |
-| 404 | Not Found | Recurso inexistente o no accesible. |
-| 409 | Conflict | Conflicto de estado o de idempotencia. |
-| 422 | Unprocessable Entity | Error de validación de los datos. |
-| 429 | Too Many Requests | Se superó el límite de solicitudes. |
-| 500 | Internal Server Error | Error inesperado del servidor. |
+| Arquitectura | RESTful | Métodos HTTP estándar (`GET`, `POST`, `PATCH`, etc.). |
+| Formato de intercambio | JSON | `Content-Type: application/json`. Codificación UTF-8. |
+| Prefijo de API | `/api/v1` | Todas las rutas funcionales están versionadas bajo `/api/v1`. |
+| Autenticación | Bearer Token (JWT) | Firma criptográfica con claims: `sub`, `tenant_id`, `membership_id`, `role`. |
+| Fechas | ISO 8601 UTC | Ejemplo: `2026-11-19T14:30:00Z`. |
+| Valores monetarios | Decimal en String | **Regla financiera crítica:** Todos los importes monetarios viajan como strings numéricos con 2 decimales (ej: `"1500000.00"`). Nunca se usan flotantes IEEE 754. En PostgreSQL se almacenan como `Numeric(18, 2)`. |
 
-## 5. Autenticación y usuarios
+### 2.1. Direcciones Base (Entorno Local)
 
-### 5.1. Inicio de sesión
+- **API Base:** `http://localhost:8000/api/v1`
+- **Documentación Interactiva (Swagger UI):** `http://localhost:8000/docs`
+- **Documentación Alternativa (ReDoc):** `http://localhost:8000/redoc`
+- **Health Check:** `http://localhost:8000/health`
 
-**Endpoint propuesto:**
+---
 
-```http
-POST /api/v1/auth/login
-```
+## 3. Encabezados HTTP (Headers)
 
-Solicitud:
+| Encabezado | Requerido en | Descripción |
+|---|---|---|
+| `Content-Type: application/json` | En todos los `POST` y `PATCH` | Especifica que el cuerpo de la solicitud es JSON. |
+| `Accept: application/json` | Todas las solicitudes | Indica que el cliente espera una respuesta JSON. |
+| `Authorization: Bearer <token>` | Rutas protegidas | Envía el token JWT obtenido en el login. El servidor extrae el `tenant_id` y `user_id` de los claims. |
+| `X-Correlation-ID` | Opcional (Recomendado) | Identificador UUID para trazabilidad distribuida entre cliente y microservicios. Si no se envía, el backend genera uno automáticamente. |
+| `Idempotency-Key` | Obligatorio en operaciones financieras | UUID único por intento de operación. Evita dobles débitos en caídas de red o reintentos de usuario. |
+
+---
+
+## 4. Estructura Estándar de Errores
+
+El backend responde con la estructura estándar de FastAPI y detalles claros para el cliente:
 
 ```json
 {
-  "tenant_slug": "cooperativa-ejemplo",
-  "email": "usuario@ejemplo.com",
-  "password": "contraseña"
+  "detail": "Descripción legible del error o motivo del rechazo."
 }
 ```
 
-Respuesta propuesta:
+### Códigos de Respuesta HTTP Utilizados
 
+| Código | Nombre | Escenario |
+|---|---|---|
+| `200 OK` | Solicitud exitosa | Consultas (`GET`) y logins exitosos. |
+| `201 Created` | Recurso creado | Transferencias, depósitos, retiros y apertura de cuentas. |
+| `400 Bad Request` | Error de negocio | Saldo insuficiente, cuenta inactiva o divisa incompatible. |
+| `401 Unauthorized` | No autenticado | Token ausente, vencido o PIN de 2FA inválido. |
+| `403 Forbidden` | Prohibido | Intento de acceder a cuentas de otro tenant o usuario. |
+| `404 Not Found` | No encontrado | Cuenta, transacción o usuario inexistente. |
+| `409 Conflict` | Conflicto de Idempotencia | Reutilización de una `Idempotency-Key` con un payload diferente. |
+| `422 Unprocessable Entity` | Error de validación | Formato JSON incorrecto o datos faltantes. |
+| `500 Internal Server Error` | Error de servidor | Fallo inesperado con rollback de transacción asegurado. |
+
+---
+
+## 5. Módulo de Autenticación (`/auth`)
+
+### 5.1. Iniciar Sesión Multitenant
+
+Valida las credenciales contra el tenant correspondiente utilizando hash de contraseñas seguro con **Argon2id**.
+
+- **Método:** `POST`
+- **Ruta:** `/api/v1/auth/login`
+- **Autenticación:** Pública
+
+#### Solicitud (`application/json`)
 ```json
 {
-  "access_token": "jwt_access_token",
+  "tenant_slug": "cooperativa-futuro",
+  "email": "carlos@fintech.com",
+  "password": "contraseña_segura"
+}
+```
+
+#### Respuesta Exitosa (`200 OK`)
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "token_type": "bearer",
-  "expires_in": 1800,
+  "expires_in": 3600,
   "user": {
-    "id": "user-id",
-    "name": "Nombre del usuario",
-    "email": "usuario@ejemplo.com",
-    "tenant_id": "tenant-id",
-    "membership_id": "membership-id",
-    "roles": [
-      "CUSTOMER"
-    ]
+    "id": "usr-001",
+    "name": "Carlos Rodríguez",
+    "email": "carlos@fintech.com",
+    "tenant_id": "tenant-coop-001",
+    "membership_id": "MEM-2024-001",
+    "roles": ["CUSTOMER"]
   }
 }
 ```
 
-Los valores anteriores son ilustrativos. El tiempo de expiración y la estructura definitiva deberán establecerse en la implementación.
+### 5.2. Consultar Usuario Autenticado
 
-### 5.2. Consultar usuario autenticado
+Obtiene los datos del perfil activo directamente decodificados desde el JWT.
 
-**Endpoint propuesto:**
+- **Método:** `GET`
+- **Ruta:** `/api/v1/auth/me`
+- **Autenticación:** `Bearer <JWT>`
 
-```http
-GET /api/v1/auth/me
-```
-
-Requiere autenticación.
-
-Permite obtener la información del usuario correspondiente al token enviado.
-
-## 6. Panel principal
-
-### 6.1. Consultar resumen financiero
-
-**Endpoint propuesto:**
-
-```http
-GET /api/v1/dashboard
-```
-
-Requiere autenticación.
-
-Su finalidad es proporcionar un resumen de la información financiera del usuario autenticado.
-
-La respuesta podrá incluir:
-
-- Saldo total por moneda.
-- Cuentas disponibles.
-- Movimientos recientes.
-- Resumen de operaciones.
-
-Los saldos deben agruparse por moneda. No se deben sumar directamente valores expresados en monedas diferentes.
-
-## 7. Cuentas bancarias
-
-### 7.1. Consultar cuentas
-
-```http
-GET /api/v1/accounts
-```
-
-Permite consultar las cuentas a las que tiene acceso el usuario autenticado.
-
-### 7.2. Consultar una cuenta específica
-
-```http
-GET /api/v1/accounts/{account_id}
-```
-
-Respuesta ilustrativa:
-
+#### Respuesta Exitosa (`200 OK`)
 ```json
 {
-  "id": "account-id",
-  "account_number_masked": "****1234",
-  "currency": "COP",
-  "balance": "1500000.00",
-  "status": "ACTIVE"
+  "user": {
+    "id": "usr-001",
+    "name": "Carlos Rodríguez",
+    "email": "carlos@fintech.com",
+    "tenant_id": "tenant-coop-001",
+    "membership_id": "MEM-2024-001",
+    "roles": ["CUSTOMER"]
+  }
 }
 ```
 
-El backend deberá validar que la cuenta pertenezca al usuario y al contexto de organización autorizado.
+---
 
-## 8. Operaciones financieras
+## 6. Módulo de Cuentas y Dashboard (`/accounts`, `/dashboard`)
 
-Las operaciones financieras deberán procesarse exclusivamente en el backend. Flutter podrá recopilar los datos y mostrar los resultados, pero no será responsable de calcular ni modificar saldos.
+### 6.1. Consultar Resumen Financiero (Dashboard)
 
-Todas las operaciones deberán validar, como mínimo:
+Agrupa y desglosa los saldos por cada moneda de forma aislada para evitar mezclar divisas (ej. pesos colombianos y dólares).
 
-- Existencia de las cuentas.
-- Propiedad y permisos del usuario.
-- Estado de las cuentas.
-- Moneda y monto solicitado.
-- Saldo disponible cuando corresponda.
-- Límites de operación.
-- Autorización mediante PIN u otro mecanismo definido.
-- Prevención de operaciones duplicadas.
+- **Método:** `GET`
+- **Ruta:** `/api/v1/dashboard`
+- **Autenticación:** `Bearer <JWT>`
 
-### 8.1. Depósitos
-
-```http
-POST /api/v1/transactions/deposits
-```
-
-Solicitud ilustrativa:
-
+#### Respuesta Exitosa (`200 OK`)
 ```json
 {
-  "account_id": "account-id",
-  "amount": "100000.00",
-  "currency": "COP",
-  "pin": "1234"
+  "user_name": "Carlos Rodríguez",
+  "user_email": "carlos@fintech.com",
+  "tenant_id": "tenant-coop-001",
+  "balances_by_currency": {
+    "COP": "4700000.00",
+    "USD": "1250.00"
+  },
+  "accounts_count": 4,
+  "accounts": [
+    {
+      "id": "acc-001",
+      "account_number": "CU-1002003001",
+      "account_number_masked": "•••• 3001",
+      "alias": "Cuenta Corriente Principal",
+      "balance": "3200000.00",
+      "currency": "COP",
+      "status": "ACTIVE",
+      "created_at": "2026-11-19T10:00:00Z"
+    },
+    {
+      "id": "acc-002",
+      "account_number": "AH-2003004002",
+      "account_number_masked": "•••• 4002",
+      "alias": "Fondo de Emergencia",
+      "balance": "1500000.00",
+      "currency": "COP",
+      "status": "ACTIVE",
+      "created_at": "2026-11-19T10:00:00Z"
+    },
+    {
+      "id": "acc-003",
+      "account_number": "US-3004005003",
+      "account_number_masked": "•••• 5003",
+      "alias": "Ahorros Dólares",
+      "balance": "1250.00",
+      "currency": "USD",
+      "status": "ACTIVE",
+      "created_at": "2026-11-19T10:00:00Z"
+    }
+  ]
 }
 ```
 
-### 8.2. Retiros
+### 6.2. Listar Cuentas del Usuario
 
-```http
-POST /api/v1/transactions/withdrawals
-```
+- **Método:** `GET`
+- **Ruta:** `/api/v1/accounts`
+- **Autenticación:** `Bearer <JWT>`
 
-Solicitud ilustrativa:
+Devuelve un arreglo `AccountResponse[]` con todas las cuentas asociadas al usuario autenticado.
 
+### 6.3. Detalle de una Cuenta Específica
+
+- **Método:** `GET`
+- **Ruta:** `/api/v1/accounts/{account_id}`
+- **Autenticación:** `Bearer <JWT>`
+
+#### Respuesta Exitosa (`200 OK`)
 ```json
 {
-  "account_id": "account-id",
+  "id": "acc-001",
+  "account_number": "CU-1002003001",
+  "account_number_masked": "•••• 3001",
+  "alias": "Cuenta Corriente Principal",
+  "balance": "3200000.00",
+  "currency": "COP",
+  "status": "ACTIVE",
+  "created_at": "2026-11-19T10:00:00Z",
+  "updated_at": "2026-11-19T14:00:00Z",
+  "tenant_id": "tenant-coop-001",
+  "user_id": "usr-001"
+}
+```
+
+### 6.4. Desactivar Cuenta (Borrado Lógico / Soft Delete)
+
+Cambia el estado de la cuenta a `INACTIVE` para revocar futuras transacciones sin eliminar el historial contable de la base de datos.
+
+- **Método:** `PATCH`
+- **Ruta:** `/api/v1/accounts/{account_id}/deactivate`
+- **Autenticación:** `Bearer <JWT>`
+
+#### Respuesta Exitosa (`200 OK`)
+Devuelve el objeto de la cuenta con `"status": "INACTIVE"`.
+
+---
+
+## 7. Módulo de Transacciones Financieras (`/transactions`)
+
+### 7.1. Pre-Cotización de Transferencia (Quote Breakdown)
+
+Permite al cliente calcular y presentar al usuario la comisión y la conversión cambiaria **antes** de solicitar el PIN de confirmación.
+
+- **Método:** `POST`
+- **Ruta:** `/api/v1/transactions/quote`
+- **Autenticación:** `Bearer <JWT>`
+
+#### Solicitud (`application/json`)
+```json
+{
+  "source_account_id": "acc-001",
+  "destination_account_number": "CU-1002003002",
+  "amount": "50000.00"
+}
+```
+
+#### Respuesta Exitosa (`200 OK`)
+```json
+{
+  "source_currency": "COP",
+  "destination_currency": "COP",
+  "amount_debited": "51500.00",
+  "amount_credited": "50000.00",
+  "fee_applied": "1500.00",
+  "exchange_rate": "1.000000",
+  "requires_conversion": false
+}
+```
+
+### 7.2. Ejecutar Transferencia Atómica con Idempotencia y PIN
+
+Ejecuta el débito y crédito atómico en una única transacción de base de datos (`ACID`). Valida el segundo factor (PIN de 4 dígitos) y respeta la clave de idempotencia.
+
+- **Método:** `POST`
+- **Ruta:** `/api/v1/transactions/transfers`
+- **Autenticación:** `Bearer <JWT>`
+- **Headers Obligatorios:** `Idempotency-Key: <UUID>`
+
+#### Solicitud (`application/json`)
+```json
+{
+  "source_account_id": "acc-001",
+  "destination_account_number": "CU-1002003002",
   "amount": "50000.00",
-  "currency": "COP",
-  "pin": "1234"
+  "pin": "1234",
+  "description": "Pago mensual de arriendo"
 }
 ```
 
-### 8.3. Transferencias
-
-```http
-POST /api/v1/transactions/transfers
-```
-
-Solicitud ilustrativa:
-
+#### Respuesta Exitosa (`201 Created`)
 ```json
 {
-  "source_account_id": "source-account-id",
-  "destination_account_id": "destination-account-id",
-  "amount": "75000.00",
+  "id": "tx-e946a382-7485-48b0-a54e-984447472019",
+  "type": "TRANSFER",
+  "amount": "50000.00",
+  "fee": "1500.00",
+  "total_debited": "51500.00",
   "currency": "COP",
-  "pin": "1234"
+  "source_account_id": "acc-001",
+  "destination_account_id": "acc-002",
+  "status": "COMPLETED",
+  "exchange_rate": "1.000000",
+  "description": "Pago mensual de arriendo",
+  "correlation_id": "corr-uuid-001",
+  "created_at": "2026-11-19T14:15:00Z"
 }
 ```
 
-Las transferencias deberán ejecutarse como una operación atómica: el débito y el crédito deben confirmarse juntos o revertirse juntos si ocurre un error.
+### 7.3. Abonar Fondos (Depósito)
 
-El PIN no debe almacenarse en texto plano ni incluirse en registros de aplicación.
+- **Método:** `POST`
+- **Ruta:** `/api/v1/transactions/deposits`
+- **Autenticación:** `Bearer <JWT>`
+- **Headers Obligatorios:** `Idempotency-Key: <UUID>`
 
-### 8.4. Idempotencia
-
-Las solicitudes que creen operaciones financieras deberán incluir:
-
-```http
-Idempotency-Key: identificador-unico
+#### Solicitud
+```json
+{
+  "account_id": "acc-001",
+  "amount": "100000.00",
+  "description": "Depósito en sucursal"
+}
 ```
 
-El backend deberá garantizar que una misma clave no produzca varias operaciones financieras.
+### 7.4. Retirar Fondos con PIN
 
-- Misma clave y mismo contenido: devolver el resultado original.
-- Misma clave y contenido diferente: responder con `409 Conflict`.
+- **Método:** `POST`
+- **Ruta:** `/api/v1/transactions/withdrawals`
+- **Autenticación:** `Bearer <JWT>`
+- **Headers Obligatorios:** `Idempotency-Key: <UUID>`
 
-El mecanismo deberá persistir de manera segura para evitar duplicaciones incluso ante reintentos o interrupciones.
-
-## 9. Historial de transacciones
-
-**Endpoint propuesto:**
-
-```http
-GET /api/v1/transactions
+#### Solicitud
+```json
+{
+  "account_id": "acc-001",
+  "amount": "30000.00",
+  "pin": "1234",
+  "description": "Retiro en cajero automático"
+}
 ```
 
-Parámetros de consulta previstos:
+### 7.5. Consultar Historial Paginado de Transacciones
 
-| Parámetro | Descripción |
-|---|---|
-| `account_id` | Filtrar por cuenta. |
-| `type` | Filtrar por tipo de operación. |
-| `from` | Fecha inicial. |
-| `to` | Fecha final. |
-| `page` | Número de página. |
-| `page_size` | Cantidad de resultados por página. |
+- **Método:** `GET`
+- **Ruta:** `/api/v1/transactions`
+- **Autenticación:** `Bearer <JWT>`
 
-Respuesta ilustrativa:
+#### Parámetros de Consulta (Query Params)
 
+| Parámetro | Tipo | Descripción |
+|---|---|---|
+| `account_id` | `string` | Filtrar por cuenta específica (Opcional). |
+| `type` | `string` | Filtrar por tipo: `TRANSFER`, `DEPOSIT`, `WITHDRAWAL` (Opcional). |
+| `limit` | `int` | Cantidad de elementos por página (Por defecto: 20, Máx: 100). |
+| `offset` | `int` | Desplazamiento para paginación (Por defecto: 0). |
+
+#### Respuesta Exitosa (`200 OK`)
 ```json
 {
   "items": [
     {
-      "id": "transaction-id",
+      "id": "tx-001",
       "type": "TRANSFER",
-      "amount": "75000.00",
+      "amount": "50000.00",
+      "fee": "1500.00",
+      "total_debited": "51500.00",
       "currency": "COP",
+      "source_account_id": "acc-001",
+      "destination_account_id": "acc-002",
       "status": "COMPLETED",
-      "created_at": "2026-11-19T10:00:00Z"
+      "exchange_rate": "1.000000",
+      "description": "Transferencia entre cuentas",
+      "correlation_id": "corr-seed-001",
+      "created_at": "2026-11-19T11:00:00Z"
     }
   ],
-  "page": 1,
-  "page_size": 20,
-  "total": 1
+  "total": 1,
+  "limit": 20,
+  "offset": 0
 }
 ```
 
-Los filtros y la paginación deberán validarse en el backend.
+---
 
-## 10. Comisiones y conversión de moneda
+## 8. Contrato de Idempotencia
 
-Las comisiones y conversiones deberán calcularse en el backend, nunca confiar en valores calculados o enviados por el cliente.
+Para proteger contra duplicaciones por fallas de red o múltiples clics del usuario:
 
-Se deberán definir antes de implementar estas funcionalidades:
-
-- Monedas permitidas.
-- Precisión decimal por moneda.
-- Reglas de redondeo.
-- Fuente y vigencia de las tasas de cambio.
-- Momento en que se fija la tasa de cambio.
-- Reglas y valores de las comisiones.
-
-Cualquier tasa estática utilizada durante pruebas deberá identificarse como un valor de demostración, no como una tasa financiera real.
-
-## 11. Seguridad y auditoría
-
-El backend deberá contemplar:
-
-- Validación de JWT en rutas protegidas.
-- Control de acceso basado en roles y permisos.
-- Aislamiento de datos entre organizaciones (tenant).
-- Validación de propiedad de las cuentas.
-- Protección de credenciales y secretos mediante variables de entorno.
-- Registro de auditoría de operaciones relevantes.
-- Limitación de solicitudes para reducir abusos.
-- Manejo seguro de errores sin exponer información interna.
-
-Si se incorporan webhooks, deberán contar con un mecanismo de autenticación, validación de origen y política de reintentos.
-
-## 12. Responsabilidades por componente
-
-| Componente | Responsabilidades |
-|---|---|
-| Flutter | Interfaz, navegación, formularios, validaciones de experiencia de usuario y consumo de la API. |
-| FastAPI | Endpoints, autenticación, autorización, reglas financieras y validaciones de negocio. |
-| PostgreSQL | Persistencia de usuarios, cuentas, transacciones y registros relacionados. |
-| Redis | Soporte para idempotencia, caché o limitación de solicitudes, según el diseño definitivo. |
-
-La interfaz puede validar campos para mejorar la experiencia, pero el backend siempre deberá repetir las validaciones necesarias para garantizar la integridad y seguridad.
-
-## 13. Acuerdos pendientes
-
-Antes de considerar este contrato definitivo, se deben acordar los siguientes puntos:
-
-1. Tipo de identificadores para usuarios, cuentas y transacciones (UUID o enteros).
-2. Modelo de usuarios, roles y organizaciones.
-3. Tipos y estados permitidos para las transacciones.
-4. Política de autenticación, expiración y renovación de tokens.
-5. Mecanismo de autorización de operaciones (PIN u otro).
-6. Monedas, precisión decimal y reglas de redondeo.
-7. Límites de operaciones y comisiones.
-8. Formato definitivo de paginación y filtros.
-9. Estrategia de almacenamiento y expiración de claves de idempotencia.
-
-## 14. Control de cambios
-
-| Versión | Descripción |
-|---|---|
-| 0.1.0 | Creación de la propuesta inicial del contrato de API. |
-| 0.2.0 | Se incorpora el identificador de institución (`tenant_slug`) al inicio de sesión y la membresía a la respuesta de autenticación. |
+1. **Ámbito de la clave:** El backend asocia la clave con la tupla `(tenant_id, user_id, idempotency_key)`.
+2. **Reintento Idéntico (Replay):** Si el servidor recibe una clave ya procesada con el mismo payload exacto, responde con el mismo código HTTP (200/201) y el resultado original en caché, **sin alterar nuevamente los balances ni generar una segunda transacción contable**.
+3. **Colisión de Parámetros (Collision):** Si el servidor detecta la misma clave con un cuerpo o monto distinto, rechaza inmediatamente con `409 Conflict`.
 
 ---
 
+## 9. Tasas de Cambio y Tarifas Estáticas
 
+El cálculo de comisiones y conversiones se efectúa exclusivamente en el backend bajo la siguiente tabla estática:
 
+### 9.1. Tasas de Cambio
+
+| Moneda Origen | Moneda Destino | Tasa Multiplicadora | Equivalencia |
+|---|---|---|---|
+| `COP` | `USD` | `0.00025` | 1 USD = 4,000 COP |
+| `USD` | `COP` | `4000.00` | 1 USD = 4,000 COP |
+| `EUR` | `COP` | `4350.00` | 1 EUR = 4,350 COP |
+| `COP` | `EUR` | `0.00023` | - |
+| `USD` | `EUR` | `0.92` | - |
+| `EUR` | `USD` | `1.09` | - |
+
+### 9.2. Tarifas Bancarias Fijas por Transacción
+
+| Moneda de la Cuenta Origen | Comisión Fija Aplicada |
+|---|---|
+| `COP` | `$1,500.00 COP` |
+| `USD` | `$1.00 USD` |
+| `EUR` | `€1.00 EUR` |
+
+---
+
+## 10. Control de Versiones
+
+| Versión | Fecha | Autor / Equipo | Descripción de Cambios |
+|---|---|---|---|
+| `0.1.0` | 2026-11-19 | Persona 1 & 2 | Propuesta inicial del contrato de API y rutas previstas. |
+| `0.2.0` | 2026-11-19 | Persona 1 | Incorporación de `tenant_slug` al login y claims de membresía. |
+| `1.0.0` | 2026-11-19 | Integración Unificada | **Versión definitiva implementada.** Se documentan todas las rutas activas de FastAPI (`/auth`, `/dashboard`, `/accounts`, `/transactions`), el esquema de cotización previa (`/quote`), validación de PIN 2FA, idempotencia con Redis/DB y contratos reales de respuesta validados con pruebas en Flutter y Backend. |

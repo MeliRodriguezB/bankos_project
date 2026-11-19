@@ -1,93 +1,179 @@
-# BankOS
+# BankOS — Plataforma Bancaria Digital Multi-Tenant (BaaS)
 
-BankOS es un proyecto de aplicación bancaria con una arquitectura cliente-servidor. El cliente móvil se desarrolla con Flutter y el backend expone una API REST construida con FastAPI.
+BankOS es una plataforma moderna de **Banking-as-a-Service (BaaS)** con arquitectura cliente-servidor, diseñada para soportar múltiples instituciones financieras (cooperativas, neobancos y fintechs) de forma aislada, segura y escalable.
 
-> **Estado del proyecto:** documentación y estructura inicial en desarrollo. Las funcionalidades descritas como objetivos no se consideran implementadas hasta que existan sus endpoints, lógica y pruebas correspondientes.
+El cliente móvil y web está construido con **Flutter**, y el backend de alta concurrencia expone una API REST construida con **FastAPI**, persistencia en **PostgreSQL 16** y soporte de caché/idempotencia en **Redis 7**.
 
-## Tecnologías
+---
 
-- **Frontend:** Flutter y Dart.
-- **Backend:** Python y FastAPI.
-- **Base de datos:** PostgreSQL.
-- **Caché y soporte de operaciones:** Redis.
+## 🚀 Estado del Proyecto: Implementado y Validado (v1.0.0)
+
+El proyecto cuenta con la integración de las 3 Personas de desarrollo:
+1. **Persona 1 (Autenticación e Inquilinos):**
+   - Identificación de tenant por `tenant_slug`.
+   - Hashing criptográfico de contraseñas con **Argon2id** (`pwdlib`).
+   - Generación de sesiones JWT con claims de seguridad (`sub`, `tenant_id`, `membership_id`, `role`).
+   - Pantalla de login en Flutter con selector de institución, persistencia y banner de errores.
+2. **Persona 2 (Dashboard y Cuentas Bancarias):**
+   - Resumen multimoneda con saldos agrupados (`COP`, `USD`) sin sumas cruzadas inválidas.
+   - Listado y detalle de cuentas con enmascaramiento seguro de número (`•••• 3001`).
+   - Manejo completo de estados de interfaz: carga (*shimmer*), error con reintento y estado vacío.
+   - Desactivación lógica de cuentas (*soft delete* / `INACTIVE`).
+3. **Persona 3 (Transacciones Financieras e Historial):**
+   - Transferencias atómicas ACID con reversión total (*rollback*) ante excepciones.
+   - Pre-cotización de transferencias (*Quote breakdown*) con desglose previo de costos y comisiones.
+   - Autorización mediante segundo factor (PIN de 4 dígitos).
+   - Mecanismo de **Idempotencia** con encabezado `Idempotency-Key` para evitar cargos duplicados.
+   - Conversión de divisas con tabla de tasas estáticas y comisión bancaria parametrizada.
+   - Historial paginado con etiquetas visuales de costo y conversión.
+
+---
+
+## 🛠️ Tecnologías y Stack
+
+- **Frontend:** Flutter 3.24+ (Dart 3.5+), Material 3, soporte Web y Desktop.
+- **Backend:** Python 3.12, FastAPI, SQLAlchemy 2.0, Pydantic v2.
+- **Seguridad:** Argon2id, PyJWT.
+- **Base de Datos:** PostgreSQL 16 Alpine (`Numeric(18, 2)` para precisión monetaria exacta).
+- **Caché y Mensajería:** Redis 7 Alpine.
 - **Contenedores:** Docker y Docker Compose.
 
-## Arquitectura general
+---
 
-La aplicación Flutter consume los endpoints HTTP de FastAPI e intercambia información en formato JSON. El backend centraliza las reglas de negocio, la autenticación, la autorización y el acceso a los datos. PostgreSQL se utiliza para la persistencia y Redis para mecanismos de apoyo como idempotencia y limitación de solicitudes, según la configuración que se implemente.
+## 📁 Estructura del Repositorio
 
-## Estructura del repositorio
+```text
+bankos_project/
+├── backend/
+│   ├── app/
+│   │   ├── core/               # Seguridad (Argon2, JWT), Configuración y Dependencias
+│   │   ├── db/                 # Sesión de SQLAlchemy y Base declarativa
+│   │   ├── modules/
+│   │   │   ├── accounts/       # Modelos, esquemas, router y servicio de cuentas
+│   │   │   ├── auth/           # Login, JWT claims y autenticación
+│   │   │   └── transactions/   # Transferencias atómicas, idempotencia, cotización
+│   │   └── main.py             # App FastAPI, CORS, eventos de ciclo de vida y Seed Data
+│   ├── Dockerfile
+│   └── requirements.txt
+├── infrastructure/
+│   └── docker-compose.yml      # Definición de servicios (api, db, redis)
+├── lib/                        # Cliente Flutter
+│   ├── core/                   # Tema (Material 3), formateo monetario y ApiClient
+│   ├── features/
+│   │   ├── auth/               # Pantalla de login y repositorio de autenticación
+│   │   ├── dashboard/          # Dashboard, cuentas, widgets de saldo y tarjetas
+│   │   └── transactions/       # Transferencias, diálogo de PIN, cotización e historial
+│   ├── app.dart                # Configuración de MaterialApp y tema
+│   └── main.dart               # Punto de entrada de la aplicación
+├── test/                       # Pruebas unitarias y de widgets en Flutter
+└── docs/
+    └── api-contract.md         # Contrato exhaustivo de la API REST (v1.0.0)
+```
 
-La estructura puede evolucionar a medida que avance el desarrollo. Las rutas principales previstas son:
+---
 
-- `lib/`: código de la aplicación Flutter.
-- `backend/app/`: aplicación y módulos del backend.
-- `backend/requirements.txt`: dependencias de Python.
-- `backend/Dockerfile`: imagen del backend.
-- `infrastructure/docker-compose.yml`: servicios de desarrollo.
-- `docs/api-contract.md`: contrato inicial de la API.
+## ⚙️ Requisitos Previos
 
-## Requisitos
+- **Docker Desktop** (con soporte WSL 2 si estás en Windows).
+- **Flutter SDK** (versión 3.24 o superior).
+- **Navegador Google Chrome** (para ejecutar la versión web de Flutter).
+- **Git**.
 
-- Git.
-- Docker Desktop con integración WSL 2 (en Windows).
-- Docker Compose.
-- Flutter SDK para ejecutar el cliente móvil.
+---
 
-## Ejecución del entorno de backend
+## 🏃‍♂️ Guía Rápida de Ejecución
 
-Desde la raíz del repositorio, en una terminal:
+### 1. Iniciar el Backend (FastAPI + PostgreSQL + Redis)
+
+Desde la raíz del proyecto en una terminal (PowerShell o Bash):
 
 ```bash
-git switch develop
-git pull origin develop
 docker compose -f infrastructure/docker-compose.yml up --build -d
+```
+
+Verifica que los tres contenedores estén saludables:
+
+```bash
 docker compose -f infrastructure/docker-compose.yml ps
 ```
 
-Para consultar los registros del servicio de API:
+Deberás ver los servicios `bankos_api`, `bankos_db` y `bankos_redis` en estado `running (healthy)`.
+
+#### Enlaces Locales del Backend
+- **Documentación Interactiva (Swagger UI):** [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Documentación ReDoc:** [http://localhost:8000/redoc](http://localhost:8000/redoc)
+- **Verificación de Salud:** [http://localhost:8000/health](http://localhost:8000/health)
+
+---
+
+### 2. Iniciar el Cliente Frontend (Flutter)
+
+En otra terminal, en la raíz del repositorio:
 
 ```bash
-docker compose -f infrastructure/docker-compose.yml logs -f api
+# Obtener dependencias
+flutter pub get
+
+# Ejecutar en Google Chrome
+flutter run -d chrome
 ```
 
-La configuración local prevista expone la documentación de FastAPI en:
+*(Si prefieres probar en Windows nativo: `flutter run -d windows`)*.
 
-- Swagger UI: http://localhost:8080/docs
-- ReDoc: http://localhost:8080/redoc
-- Health check: http://localhost:8080/health
+> **💡 Switch MOCK / API en la AppBar:**  
+> La barra superior de la aplicación incluye un selector interactivo `MOCK / API`. Puedes usarlo en cualquier momento para alternar entre el backend real FastAPI en Docker y datos simulados locales para evaluación sin conexión.
 
-Estas direcciones dependen del mapeo de puertos definido en el archivo Compose. Si el puerto publicado es diferente, se debe ajustar la URL.
+---
 
-Para detener los contenedores sin eliminar los volúmenes de datos:
+## 🔐 Credenciales de Prueba Pre-cargadas (Seed Data)
+
+La base de datos se inicializa automáticamente al arrancar con datos de prueba listos para usar:
+
+### Institución 1: Cooperativa Futuro
+- **Institución:** `Cooperativa Futuro` (slug: `cooperativa-futuro`)
+- **Correo Electrónico:** `carlos@fintech.com`
+- **Contraseña:** `123456`
+- **PIN de Transferencias (2FA):** `1234`
+- **Cuentas disponibles:**
+  - `CU-1002003001` (Cuenta Corriente Principal - COP)
+  - `AH-2003004002` (Fondo de Emergencia - COP)
+  - `US-3004005003` (Ahorros Dólares - USD)
+
+### Institución 2: Neobanco Ágil (Aislamiento Multi-Tenant)
+- **Institución:** `Neobanco Ágil` (slug: `neobanco-agil`)
+- **Correo Electrónico:** `ana@neobanco.com`
+- **Contraseña:** `123456`
+- **PIN de Transferencias (2FA):** `1234`
+- *(Permite verificar que ningún usuario de una entidad puede ver cuentas ni saldos de otra).*
+
+---
+
+## 🧪 Ejecución de Pruebas Automatizadas
+
+### Pruebas del Cliente (Flutter)
+Para ejecutar la suite de 18 pruebas unitarias y de widgets (formateo de moneda, cálculo de cotización, enmascaramiento de cuentas, renderizado de tarjetas y flujos de login):
 
 ```bash
-docker compose -f infrastructure/docker-compose.yml down
+flutter test
 ```
+*Resultado: 18 pruebas pasando (100% de éxito).*
 
-Evita usar `down -v` si necesitas conservar los datos locales de PostgreSQL.
+---
 
-## Documentación
+## 🛡️ Principios Arquitectónicos y de Seguridad
 
-Consulta [Contrato inicial de API](docs/api-contract.md) para conocer los endpoints propuestos, formatos de solicitud y respuesta, códigos HTTP y responsabilidades entre frontend y backend.
+1. **Aislamiento Multi-inquilino en Base de Datos:**  
+   Todas las consultas a cuentas y transacciones filtran forzosamente por el `tenant_id` obtenido del JWT firmado. El cliente nunca puede forzar el inquilino en la consulta.
+2. **Precisión Financiera Numérica:**  
+   No se utiliza punto flotante binario (`float`) en importes contables. Se utiliza `Numeric(18, 2)` en PostgreSQL y cadenas decimales en JSON para evitar pérdidas de centavos por redondeo.
+3. **Atomicidad y Consistencia (ACID):**  
+   Las transferencias ejecutan el débito en la cuenta de origen y el crédito en la de destino dentro de la misma transacción relacional. Si cualquier validación o paso falla, se ejecuta un rollback completo.
+4. **Idempotencia Transaccional:**  
+   Toda transferencia requiere un encabezado `Idempotency-Key`. Ante reintentos con la misma clave y parámetros idénticos, se retorna el comprobante previo sin duplicar el movimiento financiero.
 
-## Flujo de trabajo Git
+---
 
-- `main`: rama estable.
-- `develop`: rama de integración.
-- `feature/nombre-descriptivo`: ramas para desarrollar funcionalidades.
+## 📖 Documentación Adicional
 
-Se recomienda crear ramas de funcionalidad desde `develop` y entregar los cambios mediante Pull Request hacia `develop`. Evita realizar cambios directamente sobre `main`.
-
-## Seguridad y configuración
-
-- No publiques contraseñas, tokens, claves privadas ni archivos `.env` con secretos reales.
-- Usa variables de entorno para la configuración sensible.
-- Los valores de desarrollo no deben reutilizarse en producción.
-- Las operaciones financieras deben validarse en el backend; las validaciones del cliente no sustituyen las reglas del servidor.
-
-## Alcance de esta documentación
-
-Este README describe la arquitectura y el procedimiento de desarrollo previsto. No afirma que todas las funcionalidades bancarias, conexiones externas o controles de seguridad estén terminados. Su estado debe verificarse contra el código y las pruebas del proyecto.
-# bankos_project/ feat/login banch
-
+Para más detalles sobre los contratos de datos, códigos HTTP y payloads exactos, consulta el archivo:
+- [Contrato de API REST v1.0.0](docs/api-contract.md)

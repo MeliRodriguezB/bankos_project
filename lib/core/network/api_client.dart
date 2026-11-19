@@ -30,6 +30,12 @@ class ApiClient {
     return 'http://localhost:8000/api/v1';
   }
 
+  static String? _globalAuthToken;
+
+  static void setGlobalAuthToken(String? token) {
+    _globalAuthToken = token;
+  }
+
   final String baseUrl;
   final http.Client _client;
   String? _authToken;
@@ -42,6 +48,7 @@ class ApiClient {
 
   void setAuthToken(String? token) {
     _authToken = token;
+    _globalAuthToken = token;
   }
 
   Map<String, String> _buildHeaders([Map<String, String>? extraHeaders]) {
@@ -52,8 +59,9 @@ class ApiClient {
       'X-Correlation-ID': 'corr-${DateTime.now().millisecondsSinceEpoch}',
     };
 
-    if (_authToken != null && _authToken!.isNotEmpty) {
-      headers['Authorization'] = 'Bearer $_authToken';
+    final token = _authToken ?? _globalAuthToken;
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
     }
 
     if (extraHeaders != null) {
