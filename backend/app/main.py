@@ -118,6 +118,51 @@ def seed_database():
                 )
             )
 
+        # Bootstrap administrativo opcional: nunca se crea una contraseña predeterminada.
+        if settings.BOOTSTRAP_ADMIN_EMAIL and settings.BOOTSTRAP_ADMIN_PASSWORD:
+            admin_email = settings.BOOTSTRAP_ADMIN_EMAIL.strip().lower()
+            admin_user = db.query(User).filter(
+                User.email.ilike(admin_email)
+            ).first()
+            if not admin_user:
+                admin_user = User(
+                    email=admin_email,
+                    password_hash=hash_password(settings.BOOTSTRAP_ADMIN_PASSWORD),
+                    full_name="Administrador institucional",
+                    is_active=True,
+                )
+                db.add(admin_user)
+                db.flush()
+
+            admin_membership = db.query(TenantMembership).filter(
+                TenantMembership.tenant_id == tenant1.id,
+                TenantMembership.user_id == admin_user.id,
+            ).first()
+            if not admin_membership:
+                admin_membership = TenantMembership(
+                    tenant_id=tenant1.id,
+                    user_id=admin_user.id,
+                    status="ACTIVE",
+                )
+                db.add(admin_membership)
+                db.flush()
+            elif admin_membership.status != "ACTIVE":
+                admin_membership.status = "ACTIVE"
+
+            assignment = db.execute(
+                membership_roles.select().where(
+                    membership_roles.c.tenant_id == tenant1.id,
+                    membership_roles.c.membership_id == admin_membership.id,
+                    membership_roles.c.role_id == role_admin.id,
+                )
+            ).first()
+            if not assignment:
+                db.execute(membership_roles.insert().values(
+                    tenant_id=tenant1.id,
+                    membership_id=admin_membership.id,
+                    role_id=role_admin.id,
+                ))
+
         # 5. Cuentas bancarias verificadas por account_number
         accounts_to_seed = [
             {
