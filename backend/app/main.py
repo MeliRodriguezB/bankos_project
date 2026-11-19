@@ -273,10 +273,18 @@ def seed_database():
 async def lifespan(app: FastAPI):
     try:
         Base.metadata.create_all(bind=engine)
+        # Índice único para impedir dobles movimientos incluso ante solicitudes simultáneas.
+        # Si ya existen claves duplicadas, el arranque falla para no operar sin esta garantía.
+        with engine.begin() as connection:
+            connection.execute(text("""
+                CREATE UNIQUE INDEX IF NOT EXISTS uq_transactions_idempotency_scope
+                ON financial_transactions (tenant_id, user_id, idempotency_key)
+                WHERE idempotency_key IS NOT NULL
+            """))
         if settings.ENVIRONMENT == "development":
             seed_database()
     except Exception as e:
-        print(f"Advertencia al conectar o crear tablas: {e}")
+        raise RuntimeError(f"No fue posible inicializar el esquema de BankOS: {e}") from e
     yield
 
 
