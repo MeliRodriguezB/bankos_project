@@ -70,6 +70,20 @@ def seed_database():
             db.add(role_customer)
             db.flush()
 
+        role_admin = db.query(Role).filter(
+            Role.tenant_id == tenant1.id,
+            Role.code == "ADMIN"
+        ).first()
+        if not role_admin:
+            role_admin = Role(
+                tenant_id=tenant1.id,
+                code="ADMIN",
+                name="Administrador institucional",
+                is_system=True
+            )
+            db.add(role_admin)
+            db.flush()
+
         # 3. Usuario Carlos Mendoza
         user1 = db.query(User).filter(User.email == "carlos@fintech.com").first()
         if not user1:
