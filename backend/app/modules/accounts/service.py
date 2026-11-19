@@ -1,4 +1,5 @@
 from decimal import Decimal
+from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -52,8 +53,8 @@ class AccountService:
         """Crea cuenta solo para un titular con membresía activa en el mismo tenant."""
         target_user_id = data.user_id or user_id
         membership = db.query(TenantMembership).filter(
-            TenantMembership.tenant_id == tenant_id,
-            TenantMembership.user_id == target_user_id,
+            TenantMembership.tenant_id == UUID(tenant_id),
+            TenantMembership.user_id == UUID(target_user_id),
             TenantMembership.status == "ACTIVE",
         ).first()
         if not membership:
