@@ -11,6 +11,8 @@ services:
       DATABASE_URL: postgresql+psycopg://bankos_user:bankos_dev_password@db:5432/bankos_db
       REDIS_URL: redis://redis:6379/0
       ENVIRONMENT: development
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
     depends_on:
       db:
         condition: service_healthy
