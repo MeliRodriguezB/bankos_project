@@ -1,5 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class ApiException implements Exception {
@@ -20,9 +21,10 @@ class ApiException implements Exception {
 }
 
 class ApiClient {
-  // En Android Emulator localhost es 10.0.2.2. En iOS / Web / Desktop es localhost.
+  // Android Emulator usa 10.0.2.2 para acceder al localhost del equipo.
+  // Web, iOS y escritorio utilizan localhost.
   static String get defaultBaseUrl {
-    if (Platform.isAndroid) {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       return 'http://10.0.2.2:8000/api/v1';
     }
     return 'http://localhost:8000/api/v1';
@@ -46,7 +48,7 @@ class ApiClient {
     final headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      // Generación de correlation_id para trazabilidad de cada petición
+      // ID de correlación para facilitar la trazabilidad de cada petición.
       'X-Correlation-ID': 'corr-${DateTime.now().millisecondsSinceEpoch}',
     };
 
@@ -69,7 +71,7 @@ class ApiClient {
         headers: _buildHeaders(),
       );
       return _processResponse(response);
-    } on SocketException {
+    } on http.ClientException {
       throw ApiException(
         statusCode: 0,
         message: 'No hay conexión con el servidor de BankOS. Verifica tu red o el contenedor.',
@@ -91,7 +93,7 @@ class ApiClient {
         body: jsonEncode(body),
       );
       return _processResponse(response);
-    } on SocketException {
+    } on http.ClientException {
       throw ApiException(
         statusCode: 0,
         message: 'Error de conexión con el servidor bancario.',
@@ -108,7 +110,7 @@ class ApiClient {
         body: body != null ? jsonEncode(body) : null,
       );
       return _processResponse(response);
-    } on SocketException {
+    } on http.ClientException {
       throw ApiException(
         statusCode: 0,
         message: 'Error de conexión al actualizar recurso.',
