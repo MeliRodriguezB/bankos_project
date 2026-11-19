@@ -4,9 +4,7 @@
 
 **Versión:** 0.1.0  
 **Estado:** Propuesta inicial para integración  
-**Autora:** Melissa Rodriguez
 
----
 
 ## 1. Objetivo
 
