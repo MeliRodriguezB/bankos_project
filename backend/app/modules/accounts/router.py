@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from app.core.dependencies import get_db, get_current_user
+from app.core.dependencies import get_db, get_current_user, require_roles
 from app.modules.accounts.schemas import (
     AccountCreate,
     AccountResponse,
@@ -13,12 +13,7 @@ from app.modules.accounts.service import AccountService
 router = APIRouter(tags=["Accounts & Dashboard"])
 
 
-@router.get(
-    "/dashboard",
-    response_model=DashboardResponse,
-    summary="Consultar resumen financiero del dashboard",
-    description="Devuelve el balance total por moneda, el conteo de cuentas y el listado de cuentas del usuario en su tenant."
-)
+@router.get("/dashboard", response_model=DashboardResponse, summary="Consultar resumen financiero del dashboard")
 def get_dashboard(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
@@ -32,20 +27,13 @@ def get_dashboard(
     )
 
 
-@router.get(
-    "/accounts",
-    response_model=list[AccountResponse],
-    summary="Listar cuentas bancarias del usuario autenticado",
-    description="Devuelve todas las cuentas (activas e inactivas) que pertenecen al usuario dentro de su institución (tenant)."
-)
+@router.get("/accounts", response_model=list[AccountResponse], summary="Listar cuentas del usuario autenticado")
 def get_accounts(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
     accounts = AccountService.get_accounts_for_user(
-        db=db,
-        tenant_id=current_user["tenant_id"],
-        user_id=current_user["user_id"],
+        db=db, tenant_id=current_user["tenant_id"], user_id=current_user["user_id"]
     )
     return [
         AccountResponse(
@@ -62,12 +50,7 @@ def get_accounts(
     ]
 
 
-@router.get(
-    "/accounts/{account_id}",
-    response_model=AccountDetailResponse,
-    summary="Consultar el detalle de una cuenta bancaria",
-    description="Devuelve la información detallada de una cuenta específica garantizando que pertenezca al usuario y tenant autenticado."
-)
+@router.get("/accounts/{account_id}", response_model=AccountDetailResponse)
 def get_account_detail(
     account_id: str,
     db: Session = Depends(get_db),
@@ -98,13 +81,12 @@ def get_account_detail(
     "/accounts",
     response_model=AccountResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Crear una nueva cuenta bancaria",
-    description="Crea una cuenta en el tenant del usuario actual. Solo disponible para administradores o proceso de apertura."
+    summary="Crear una cuenta bancaria (solo ADMIN)",
 )
 def create_account(
     data: AccountCreate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_roles("ADMIN")),
 ):
     acc = AccountService.create_account(
         db=db,
@@ -124,12 +106,7 @@ def create_account(
     )
 
 
-@router.patch(
-    "/accounts/{account_id}/deactivate",
-    response_model=AccountResponse,
-    summary="Desactivar una cuenta (Borrado Lógico / Soft Delete)",
-    description="Cambia el estado de la cuenta a INACTIVE para impedir transacciones futuras sin borrar el registro de la BD."
-)
+@router.patch("/accounts/{account_id}/deactivate", response_model=AccountResponse)
 def deactivate_account(
     account_id: str,
     db: Session = Depends(get_db),
