@@ -108,6 +108,7 @@ Solicitud:
 
 ```json
 {
+  "tenant_slug": "cooperativa-ejemplo",
   "email": "usuario@ejemplo.com",
   "password": "contraseña"
 }
@@ -125,6 +126,7 @@ Respuesta propuesta:
     "name": "Nombre del usuario",
     "email": "usuario@ejemplo.com",
     "tenant_id": "tenant-id",
+    "membership_id": "membership-id",
     "roles": [
       "CUSTOMER"
     ]
@@ -386,6 +388,7 @@ Antes de considerar este contrato definitivo, se deben acordar los siguientes pu
 | Versión | Descripción |
 |---|---|
 | 0.1.0 | Creación de la propuesta inicial del contrato de API. |
+| 0.2.0 | Se incorpora el identificador de institución (`tenant_slug`) al inicio de sesión y la membresía a la respuesta de autenticación. |
 
 ---
 
