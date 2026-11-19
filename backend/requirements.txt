@@ -1,0 +1,27 @@
+
+# Framework para construir la API REST
+fastapi
+
+# Servidor ASGI que ejecuta FastAPI
+uvicorn[standard]
+
+# ORM para interactuar con PostgreSQL
+sqlalchemy
+
+# Driver de conexión entre Python y PostgreSQL
+psycopg[binary]
+
+# Lectura y validación de variables de entorno
+pydantic-settings
+
+# Manejo de tokens JWT para autenticación
+PyJWT
+
+# Cifrado y verificación de contraseñas
+pwdlib[argon2]
+
+# Cliente Python para comunicarse con Redis
+redis
+
+# Migraciones y control de versiones del esquema de la BD
+alembic
