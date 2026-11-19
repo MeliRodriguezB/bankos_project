@@ -28,3 +28,7 @@ alembic
 
 # Validación de correos electrónicos en Pydantic
 email-validator
+
+# Pruebas automatizadas
+pytest
+httpx
