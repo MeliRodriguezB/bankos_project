@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     # Tiempo de duración del token de acceso, expresado en minutos
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
+    # Bootstrap administrativo opcional: definir ambos secretos en el entorno.
+    BOOTSTRAP_ADMIN_EMAIL: str | None = None
+    BOOTSTRAP_ADMIN_PASSWORD: str | None = None
+
     # Permite leer las variables definidas en el entorno
     model_config = SettingsConfigDict(
         case_sensitive=True,
