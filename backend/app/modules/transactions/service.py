@@ -133,7 +133,8 @@ class TransactionService:
                     existing_tx.type == "TRANSFER"
                     and existing_tx.source_account_id == data.source_account_id
                     and existing_tx.amount == data.amount
-                    and existing_tx.description == (data.description or f"Transferencia a cuenta {existing_tx.description.split()[-1] if existing_tx.description else ''}")
+                    and (data.description is None or existing_tx.description == data.description)
+                    and existing_tx.currency == data.currency.upper()
                 )
                 if not same_request:
                     raise HTTPException(
