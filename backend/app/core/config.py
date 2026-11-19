@@ -1,6 +1,7 @@
 
 from functools import lru_cache
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -33,6 +34,22 @@ class Settings(BaseSettings):
         case_sensitive=True,
         extra="ignore"
     )
+
+    @model_validator(mode="after")
+    def validate_production_secrets(self):
+        if self.ENVIRONMENT.lower() == "production":
+            if (
+                self.SECRET_KEY == "bankos-development-secret-change-before-production"
+                or len(self.SECRET_KEY) < 32
+            ):
+                raise ValueError(
+                    "En producción SECRET_KEY debe ser una clave propia de al menos 32 caracteres."
+                )
+        if bool(self.BOOTSTRAP_ADMIN_EMAIL) != bool(self.BOOTSTRAP_ADMIN_PASSWORD):
+            raise ValueError(
+                "BOOTSTRAP_ADMIN_EMAIL y BOOTSTRAP_ADMIN_PASSWORD deben configurarse juntos."
+            )
+        return self
 
 
 # Evita crear varias instancias de configuración innecesariamente
