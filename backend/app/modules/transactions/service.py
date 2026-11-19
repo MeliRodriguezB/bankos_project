@@ -182,6 +182,12 @@ class TransactionService:
                 detail="La cuenta destino no puede ser la misma cuenta de origen."
             )
 
+        if data.currency.upper() != source_acc.currency.upper():
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="La divisa solicitada no coincide con la divisa de la cuenta origen.",
+            )
+
         # --- 4. Cálculo de Comisión y Conversión de Divisas ---
         fee = cls.FIXED_FEES.get(source_acc.currency, Decimal("0.00"))
         rate = cls.get_exchange_rate(source_acc.currency, dest_acc.currency)
@@ -280,6 +286,12 @@ class TransactionService:
                 detail="La cuenta seleccionada no existe o no se encuentra activa."
             )
 
+        if data.currency.upper() != account.currency.upper():
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="La divisa solicitada no coincide con la divisa de la cuenta.",
+            )
+
         try:
             account.balance += data.amount
             tx = Transaction(
@@ -354,6 +366,12 @@ class TransactionService:
 
         if not account or account.status != "ACTIVE":
             raise HTTPException(status_code=400, detail="Cuenta inválida o inactiva.")
+
+        if data.currency.upper() != account.currency.upper():
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="La divisa solicitada no coincide con la divisa de la cuenta.",
+            )
 
         if account.balance < data.amount:
             raise HTTPException(status_code=400, detail="Saldo insuficiente para realizar el retiro.")
