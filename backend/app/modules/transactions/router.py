@@ -80,11 +80,14 @@ def create_deposit(
     deposit_data: DepositRequest,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
-    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
+    idempotency_key: str = Header(..., alias="Idempotency-Key", min_length=8, max_length=100),
     x_correlation_id: Optional[str] = Header(None, alias="X-Correlation-ID"),
 ):
     correlation_id = x_correlation_id or f"corr-{uuid.uuid4()}"
-    key = idempotency_key or f"idem-{uuid.uuid4()}"
+    key = idempotency_key.strip()
+    if not key:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=422, detail="Idempotency-Key no puede estar vacío.")
 
     return TransactionService.process_deposit(
         db=db,
@@ -107,11 +110,14 @@ def create_withdrawal(
     withdraw_data: WithdrawRequest,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
-    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
+    idempotency_key: str = Header(..., alias="Idempotency-Key", min_length=8, max_length=100),
     x_correlation_id: Optional[str] = Header(None, alias="X-Correlation-ID"),
 ):
     correlation_id = x_correlation_id or f"corr-{uuid.uuid4()}"
-    key = idempotency_key or f"idem-{uuid.uuid4()}"
+    key = idempotency_key.strip()
+    if not key:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=422, detail="Idempotency-Key no puede estar vacío.")
 
     return TransactionService.process_withdrawal(
         db=db,
