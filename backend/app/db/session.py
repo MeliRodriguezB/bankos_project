@@ -1,5 +1,6 @@
+from collections.abc import Generator
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import settings
 
@@ -11,10 +12,20 @@ engine = create_engine(
     echo=settings.ENVIRONMENT == "development",
 )
 
-# Sesiones de base de datos no autocommit por defecto para garantizar
-# que cada operación financiera defina explícitamente sus límites de transacción (commit o rollback).
+# Fábrica de sesiones: cada solicitud obtiene su propia sesión transaccional aislada.
 SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
     bind=engine,
+    class_=Session,
+    autoflush=False,
+    autocommit=False,
+    expire_on_commit=False,
 )
+
+
+def get_db() -> Generator[Session, None, None]:
+    """Entrega una sesión de base de datos y garantiza cerrarla al terminar."""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

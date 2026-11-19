@@ -115,6 +115,7 @@ app.add_middleware(
 # Endpoint de verificación de salud
 @app.get("/health", tags=["Health"])
 def health_check():
+    """Devuelve el estado básico de disponibilidad de la API."""
     return {
         "status": "ok",
         "application": "BankOS",
