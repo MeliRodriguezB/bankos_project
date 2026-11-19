@@ -35,7 +35,7 @@ def test_invalid_jwt_is_rejected(monkeypatch):
 def test_openapi_registers_all_api_modules():
     from app.main import app
 
-    paths = {route.path for route in app.routes}
+    paths = set(app.openapi().get("paths", {}).keys())
     assert "/health" in paths
     assert "/api/v1/auth/login" in paths
     assert "/api/v1/auth/me" in paths
