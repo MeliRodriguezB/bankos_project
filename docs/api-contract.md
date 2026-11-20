@@ -162,9 +162,9 @@ Devuelve la identidad visual del tenant asociado al token actual. El endpoint no
 ```json
 {
   "tenant_name": "Bancolombia",
-  "primary_color": "#007A4B",
+  "primary_color": "#FFD600",
   "secondary_color": "#FFFFFF",
-  "accent_color": "#19A86B"
+  "accent_color": "#F2B900"
 }
 ```
 
