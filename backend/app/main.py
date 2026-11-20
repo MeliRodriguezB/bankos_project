@@ -125,6 +125,18 @@ def seed_database():
                 )
             )
 
+        # Segunda membresía de demostración: el contexto del JWT mantiene aislados ambos tenants.
+        membership2 = db.query(TenantMembership).filter(
+            TenantMembership.tenant_id == tenant2.id,
+            TenantMembership.user_id == user1.id
+        ).first()
+        if not membership2:
+            db.add(TenantMembership(
+                tenant_id=tenant2.id,
+                user_id=user1.id,
+                status="ACTIVE"
+            ))
+
         # Bootstrap administrativo opcional: nunca se crea una contraseña predeterminada.
         if settings.BOOTSTRAP_ADMIN_EMAIL and settings.BOOTSTRAP_ADMIN_PASSWORD:
             admin_email = settings.BOOTSTRAP_ADMIN_EMAIL.strip().lower()
