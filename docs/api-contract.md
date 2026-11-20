@@ -1,7 +1,7 @@
 # BankOS — Contrato de API
 
 **Versión:** 1.0.0  
-**Estado:** Implementado y validado en backend (FastAPI) y cliente móvil/web (Flutter).
+**Estado:** Contrato de referencia para backend (FastAPI) y cliente móvil/web (Flutter); la validación de los cambios recientes requiere pruebas locales.
 
 ---
 
