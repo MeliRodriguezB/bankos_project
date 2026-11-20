@@ -145,12 +145,13 @@ def bank_metrics(bank_id: UUID, db: Session = Depends(get_db), _: dict = Depends
 
 @router.get("/accounts")
 def list_accounts(db: Session = Depends(get_db), _: dict = Depends(require_platform_admin)):
-    rows = db.query(Account, Tenant.name).join(Tenant, Tenant.id == Account.tenant_id).order_by(Account.created_at.desc()).limit(500).all()
+    rows = db.query(Account, Tenant.name, User.full_name, User.email).join(Tenant, Tenant.id == Account.tenant_id).outerjoin(User, User.id == Account.user_id).order_by(Account.created_at.desc()).limit(500).all()
     return [{
-        "id": a.id, "account_number": a.account_number_masked, "alias": a.alias,
+        "id": a.id, "account_number_masked": a.account_number_masked, "alias": a.alias or "Cuenta",
         "bank": bank_name, "tenant_id": a.tenant_id, "user_id": a.user_id,
+        "owner_name": owner_name or "Titular", "owner_email": owner_email or "",
         "balance": str(a.balance), "currency": a.currency, "status": a.status,
-    } for a, bank_name in rows]
+    } for a, bank_name, owner_name, owner_email in rows]
 
 
 @router.get("/currencies")
