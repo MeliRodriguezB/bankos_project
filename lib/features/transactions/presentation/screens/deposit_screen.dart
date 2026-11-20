@@ -129,7 +129,10 @@ class _DepositScreenState extends State<DepositScreen> {
                             ))
                         .toList(),
                     onChanged: (val) {
-                      if (val != null) setState(() => _selectedAccount = val);
+                      if (val != null) setState(() {
+                        _selectedAccount = val;
+                        _currentIdempotencyKey = null;
+                      });
                     },
                   ),
                 ),
@@ -140,6 +143,7 @@ class _DepositScreenState extends State<DepositScreen> {
               const SizedBox(height: 6),
               TextFormField(
                 controller: _amountController,
+                onChanged: (_) => _currentIdempotencyKey = null,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(
                   prefixText: '\$ ',
@@ -161,6 +165,7 @@ class _DepositScreenState extends State<DepositScreen> {
               const SizedBox(height: 6),
               TextFormField(
                 controller: _descController,
+                onChanged: (_) => _currentIdempotencyKey = null,
                 decoration: InputDecoration(
                   hintText: 'Ej. Nómina quincenal',
                   filled: true,
