@@ -19,6 +19,14 @@ from app.modules.users.models import User
 @pytest.fixture
 def financial_db():
     engine = create_engine("sqlite:///:memory:")
+    # SQLite no soporta gen_random_uuid() como DEFAULT; las pruebas asignan UUID explícitos.
+    for table in Base.metadata.tables.values():
+        for column in table.columns:
+            if (
+                column.server_default is not None
+                and "gen_random_uuid" in str(column.server_default.arg)
+            ):
+                column.server_default = None
     Base.metadata.create_all(engine)
     session_factory = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
     db = session_factory()
