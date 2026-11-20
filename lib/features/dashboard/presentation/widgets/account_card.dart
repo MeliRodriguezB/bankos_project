@@ -6,12 +6,14 @@ import 'status_badge.dart';
 
 class AccountCard extends StatelessWidget {
   final AccountModel account;
+  final Color bankColor;
   final bool isBalanceHidden;
   final VoidCallback onTap;
 
   const AccountCard({
     super.key,
     required this.account,
+    required this.bankColor,
     required this.isBalanceHidden,
     required this.onTap,
   });
@@ -29,8 +31,14 @@ class AccountCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Column(
+          padding: const EdgeInsets.all(0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(width: 5, decoration: BoxDecoration(color: bankColor, borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), bottomLeft: Radius.circular(16)))),
+              Expanded(child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Fila 1: Alias y Badge de Estado
@@ -140,8 +148,10 @@ class AccountCard extends StatelessWidget {
                   ),
                 ),
               ],
-            ],
-          ),
+                ],
+              ),
+            )),
+          ],
         ),
       ),
     );
