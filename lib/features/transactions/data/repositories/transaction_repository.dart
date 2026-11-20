@@ -27,7 +27,12 @@ abstract class TransactionRepository {
     required String idempotencyKey,
   });
 
-  Future<List<TransactionModel>> getHistory({String? accountId, String? type});
+  Future<List<TransactionModel>> getHistory({
+    String? accountId,
+    String? type,
+    int page = 1,
+    int pageSize = 20,
+  });
 }
 
 class ApiTransactionRepository implements TransactionRepository {
@@ -97,12 +102,33 @@ class ApiTransactionRepository implements TransactionRepository {
   }
 
   @override
-  Future<List<TransactionModel>> getHistory({String? accountId, String? type}) async {
-    String query = '';
-    if (type != null) query += '?type=$type';
-    final response = await _apiClient.get('/transactions$query');
+  Future<List<TransactionModel>> getHistory({
+    String? accountId,
+    String? type,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    // Construye los filtros de forma segura y utiliza la paginación del backend.
+    final queryParameters = <String, String>{
+      'page': page.toString(),
+      'page_size': pageSize.toString(),
+    };
+    if (accountId != null && accountId.trim().isNotEmpty) {
+      queryParameters['account_id'] = accountId.trim();
+    }
+    if (type != null && type.trim().isNotEmpty) {
+      queryParameters['type'] = type.trim().toUpperCase();
+    }
+
+    final query = Uri(queryParameters: queryParameters).query;
+    final response = await _apiClient.get('/transactions?$query');
+    if (response is! Map<String, dynamic>) {
+      throw ApiException(statusCode: 502, message: 'Respuesta inválida al consultar el historial.');
+    }
     final items = response['items'] as List<dynamic>? ?? [];
-    return items.map((i) => TransactionModel.fromJson(i as Map<String, dynamic>)).toList();
+    return items
+        .map((item) => TransactionModel.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 }
 
@@ -238,11 +264,16 @@ class MockTransactionRepository implements TransactionRepository {
   }
 
   @override
-  Future<List<TransactionModel>> getHistory({String? accountId, String? type}) async {
+  Future<List<TransactionModel>> getHistory({
+    String? accountId,
+    String? type,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
     await Future.delayed(const Duration(milliseconds: 400));
-    if (type != null) {
-      return _mockHistory.where((t) => t.type == type.toUpperCase()).toList();
-    }
-    return List.unmodifiable(_mockHistory);
+    var filtered = _mockHistory.where((t) => type == null || t.type == type.toUpperCase()).toList();
+    final start = (page - 1) * pageSize;
+    if (start >= filtered.length) return [];
+    return filtered.skip(start).take(pageSize).toList();
   }
 }
