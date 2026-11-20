@@ -102,7 +102,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
           ),
           ElevatedButton(
             onPressed: () {
-              if (RegExp(r'^\d{4}).hasMatch(pinController.text)) {
+              if (RegExp(r'^\d{4}$').hasMatch(pinController.text)) {
                 Navigator.pop(dialogContext, true);
               }
             },
