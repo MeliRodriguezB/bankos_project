@@ -61,6 +61,88 @@ jobs:
           done
           curl --fail --silent http://localhost:8000/openapi.json | python -c "import json, sys; spec=json.load(sys.stdin); assert spec['info']['version'] == '1.0.0'; assert '/api/v1/transactions/transfers' in spec['paths']"
 
+      - name: Verify both demo tenants are isolated
+        run: |
+          python - <<'PY'
+          import json
+          from urllib.request import Request, urlopen
+
+          base_url = "http://localhost:8000/api/v1"
+
+          def request(path, payload=None, token=None):
+              headers = {"Content-Type": "application/json"}
+              if token:
+                  headers["Authorization"] = f"Bearer {token}"
+              body = json.dumps(payload).encode() if payload is not None else None
+              method = "POST" if payload is not None else "GET"
+              req = Request(f"{base_url}{path}", data=body, headers=headers, method=method)
+              with urlopen(req, timeout=10) as response:
+                  return json.loads(response.read())
+
+          scenarios = [
+              ("cooperativa-futuro", "1002348911", "8880001234"),
+              ("neobanco-agil", "8880001234", "1002348911"),
+          ]
+          for tenant_slug, expected_account, foreign_account in scenarios:
+              login = request("/auth/login", {
+                  "tenant_slug": tenant_slug,
+                  "email": "carlos@fintech.com",
+                  "password": "123456",
+              })
+              accounts = request("/accounts", token=login["access_token"])
+              account_numbers = {account["account_number"] for account in accounts}
+              assert expected_account in account_numbers, tenant_slug
+              assert foreign_account not in account_numbers, tenant_slug
+          print("Both tenant logins succeeded and account lists remained isolated.")
+          PY
+
+      - name: Verify PostgreSQL transaction audit is append-only
+        run: |
+          docker compose -f ../docker-compose.yml exec -T api python - <<'PY'
+          from decimal import Decimal
+          from sqlalchemy import text
+
+          from app.db.session import SessionLocal, engine
+          from app.modules.transactions.models import Transaction
+
+          session = SessionLocal()
+          record = Transaction(
+              tenant_id="audit-smoke-tenant",
+              user_id="audit-smoke-user",
+              type="DEPOSIT",
+              amount=Decimal("1.00"),
+              currency="COP",
+              status="COMPLETED",
+              description="append-only smoke",
+          )
+          session.add(record)
+          session.commit()
+          record_id = record.id
+          session.close()
+
+          mutations = [
+              ("UPDATE financial_transactions SET description = 'changed' WHERE id = :id", "update"),
+              ("DELETE FROM financial_transactions WHERE id = :id", "delete"),
+          ]
+          for statement, operation in mutations:
+              try:
+                  with engine.begin() as connection:
+                      connection.execute(text(statement), {"id": record_id})
+              except Exception as exc:
+                  if "immutable" not in str(exc).lower():
+                      raise
+              else:
+                  raise AssertionError(f"PostgreSQL trigger allowed {operation}")
+
+          with engine.connect() as connection:
+              description = connection.execute(
+                  text("SELECT description FROM financial_transactions WHERE id = :id"),
+                  {"id": record_id},
+              ).scalar_one()
+          assert description == "append-only smoke"
+          print("PostgreSQL UPDATE and DELETE protections verified.")
+          PY
+
       - name: Stop the root Docker Compose stack
         if: always()
         run: docker compose -f ../docker-compose.yml down -v
