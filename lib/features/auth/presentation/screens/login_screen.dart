@@ -76,9 +76,15 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       final response = await _repository.login(request);
 
-      // Guarda el token antes de navegar para mantener la sesión entre reinicios.
-      await _sessionStorage.saveToken(response.accessToken);
-      _apiClient.setAuthToken(response.accessToken);
+      // La sesión real se persiste; los tokens MOCK nunca se guardan.
+      if (_useMock) {
+        await _sessionStorage.clearToken();
+        ApiClient.setGlobalAuthToken(null);
+        _apiClient.setAuthToken(null);
+      } else {
+        await _sessionStorage.saveToken(response.accessToken);
+        _apiClient.setAuthToken(response.accessToken);
+      }
 
       if (!mounted) return;
       setState(() => _isLoading = false);
