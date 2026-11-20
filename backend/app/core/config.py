@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     # Tiempo de duración del token de acceso, expresado en minutos
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
+    # Los depósitos simulados solo están permitidos en desarrollo/demostración.
+    SIMULATED_DEPOSITS_ENABLED: bool = True
+
     # Bootstrap administrativo opcional: definir ambos secretos en el entorno.
     BOOTSTRAP_ADMIN_EMAIL: str | None = None
     BOOTSTRAP_ADMIN_PASSWORD: str | None = None
@@ -54,6 +57,10 @@ class Settings(BaseSettings):
             ):
                 raise ValueError(
                     "En producción SECRET_KEY debe ser una clave propia de al menos 32 caracteres."
+                )
+            if self.SIMULATED_DEPOSITS_ENABLED:
+                raise ValueError(
+                    "Los depósitos simulados deben deshabilitarse en producción."
                 )
         if bool(self.BOOTSTRAP_ADMIN_EMAIL) != bool(self.BOOTSTRAP_ADMIN_PASSWORD):
             raise ValueError(
