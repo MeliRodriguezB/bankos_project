@@ -1,6 +1,6 @@
 import uuid
 from typing import Optional
-from fastapi import APIRouter, Depends, Header, Query, status
+from fastapi import APIRouter, Depends, Header, Query, Request, status
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_db, get_current_user
@@ -49,12 +49,13 @@ def get_quote(
 )
 def create_transfer(
     transfer_data: TransferRequest,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
     idempotency_key: str = Header(..., alias="Idempotency-Key", min_length=8, max_length=100),
-    x_correlation_id: Optional[str] = Header(None, alias="X-Correlation-ID"),
 ):
-    correlation_id = x_correlation_id or f"corr-{uuid.uuid4()}"
+    # Reuse the middleware ID so the response header and audit record match.
+    correlation_id = getattr(request.state, "correlation_id", None) or f"corr-{uuid.uuid4()}"
     key = idempotency_key.strip()
     if not key:
         from fastapi import HTTPException
@@ -79,10 +80,10 @@ def create_transfer(
 )
 def create_deposit(
     deposit_data: DepositRequest,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
     idempotency_key: str = Header(..., alias="Idempotency-Key", min_length=8, max_length=100),
-    x_correlation_id: Optional[str] = Header(None, alias="X-Correlation-ID"),
 ):
     if not settings.SIMULATED_DEPOSITS_ENABLED:
         from fastapi import HTTPException
@@ -91,7 +92,7 @@ def create_deposit(
             detail="Los depósitos simulados están deshabilitados. Configure un proveedor de pagos para recibir fondos.",
         )
 
-    correlation_id = x_correlation_id or f"corr-{uuid.uuid4()}"
+    correlation_id = getattr(request.state, "correlation_id", None) or f"corr-{uuid.uuid4()}"
     key = idempotency_key.strip()
     if not key:
         from fastapi import HTTPException
@@ -116,12 +117,12 @@ def create_deposit(
 )
 def create_withdrawal(
     withdraw_data: WithdrawRequest,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
     idempotency_key: str = Header(..., alias="Idempotency-Key", min_length=8, max_length=100),
-    x_correlation_id: Optional[str] = Header(None, alias="X-Correlation-ID"),
 ):
-    correlation_id = x_correlation_id or f"corr-{uuid.uuid4()}"
+    correlation_id = getattr(request.state, "correlation_id", None) or f"corr-{uuid.uuid4()}"
     key = idempotency_key.strip()
     if not key:
         from fastapi import HTTPException
