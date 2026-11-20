@@ -1,3 +1,4 @@
+import re
 import uuid
 from contextlib import asynccontextmanager
 from decimal import Decimal
@@ -329,7 +330,23 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Correlation-ID"],
 )
+
+# Cada solicitud recibe un identificador trazable y lo devuelve en la respuesta.
+@app.middleware("http")
+async def correlation_id_middleware(request, call_next):
+    supplied_id = request.headers.get("X-Correlation-ID", "").strip()
+    correlation_id = (
+        supplied_id
+        if re.fullmatch(r"[A-Za-z0-9._:-]{1,100}", supplied_id)
+        else str(uuid.uuid4())
+    )
+    request.state.correlation_id = correlation_id
+    response = await call_next(request)
+    response.headers["X-Correlation-ID"] = correlation_id
+    return response
+
 
 # Endpoint de comprobación de salud
 @app.get("/health", tags=["Health"])

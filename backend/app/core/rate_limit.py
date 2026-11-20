@@ -62,7 +62,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             count = self.local_counters[key]
 
         if count > limit:
-            correlation_id = request.headers.get("X-Correlation-ID", "")
+            correlation_id = (
+                getattr(request.state, "correlation_id", None)
+                or request.headers.get("X-Correlation-ID", "")
+            )
             return JSONResponse(
                 status_code=429,
                 content={
@@ -72,7 +75,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                         "correlation_id": correlation_id or None,
                     }
                 },
-                headers={"Retry-After": "60"},
+                headers={
+                    "Retry-After": "60",
+                    **({"X-Correlation-ID": correlation_id} if correlation_id else {}),
+                },
             )
 
         return await call_next(request)

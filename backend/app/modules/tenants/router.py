@@ -10,6 +10,29 @@ from app.modules.tenants.schemas import TenantConfigResponse, TenantConfigUpdate
 router = APIRouter(prefix="/tenant", tags=["Tenant Configuration"])
 
 
+def validate_tenant_currency_policies(
+    supported_currencies: list[str],
+    transfer_fees: dict,
+    exchange_rates: dict,
+) -> None:
+    """Valida también políticas ya guardadas cuando cambia la lista de monedas."""
+    supported = {currency.upper() for currency in supported_currencies}
+    if any(currency.upper() not in supported for currency in transfer_fees):
+        raise HTTPException(
+            status_code=422,
+            detail="Solo puedes configurar comisiones para monedas soportadas.",
+        )
+    if any(
+        currency.upper() not in supported
+        for pair in exchange_rates
+        for currency in pair.split("/")
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail="Las tasas solo pueden utilizar monedas soportadas por la institución.",
+        )
+
+
 @router.get("/config", response_model=TenantConfigResponse)
 def get_tenant_config(
     db: Session = Depends(get_db),
@@ -61,22 +84,9 @@ def update_tenant_config(
             )
 
     supported = changes.get("supported_currencies", tenant.supported_currencies)
-    if "transfer_fees" in changes and any(
-        currency not in supported for currency in changes["transfer_fees"]
-    ):
-        raise HTTPException(
-            status_code=422,
-            detail="Solo puedes configurar comisiones para monedas soportadas.",
-        )
-    if "exchange_rates" in changes and any(
-        currency not in supported
-        for pair in changes["exchange_rates"]
-        for currency in pair.split("/")
-    ):
-        raise HTTPException(
-            status_code=422,
-            detail="Las tasas solo pueden utilizar monedas soportadas por la institución.",
-        )
+    effective_fees = changes.get("transfer_fees", tenant.transfer_fees or {})
+    effective_rates = changes.get("exchange_rates", tenant.exchange_rates or {})
+    validate_tenant_currency_policies(supported, effective_fees, effective_rates)
 
     if "webhook_url" in changes and changes["webhook_url"] is not None:
         changes["webhook_url"] = str(changes["webhook_url"])

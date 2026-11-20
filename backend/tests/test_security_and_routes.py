@@ -168,3 +168,51 @@ def test_rate_limit_policies_cover_login_transactions_and_api():
     assert RateLimitMiddleware._policy("/api/v1/transactions/transfers") == ("transactions", 30)
     assert RateLimitMiddleware._policy("/api/v1/accounts") == ("api", 120)
     assert RateLimitMiddleware._policy("/health") is None
+
+
+def test_tenant_currency_policy_rejects_existing_fee_for_removed_currency():
+    from decimal import Decimal
+    from app.modules.tenants.router import validate_tenant_currency_policies
+
+    try:
+        validate_tenant_currency_policies(
+            ["COP"], {"COP": Decimal("1000.00"), "USD": Decimal("1.00")}, {}
+        )
+    except HTTPException as exc:
+        assert exc.status_code == 422
+    else:
+        raise AssertionError("No se debe conservar una comisión para una moneda deshabilitada")
+
+
+def test_tenant_currency_policy_rejects_existing_rate_for_removed_currency():
+    from app.modules.tenants.router import validate_tenant_currency_policies
+
+    try:
+        validate_tenant_currency_policies(
+            ["COP"], {"COP": "1000.00"}, {"COP/USD": "0.00025"}
+        )
+    except HTTPException as exc:
+        assert exc.status_code == 422
+    else:
+        raise AssertionError("No se debe conservar una tasa para una moneda deshabilitada")
+
+
+def test_correlation_id_is_returned_for_success_and_standardized_errors():
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    with TestClient(app) as client:
+        success = client.get(
+            "/health", headers={"X-Correlation-ID": "bankos-test-001"}
+        )
+        assert success.status_code == 200
+        assert success.headers["X-Correlation-ID"] == "bankos-test-001"
+
+        missing = client.get(
+            "/api/v1/does-not-exist",
+            headers={"X-Correlation-ID": "bankos-test-002"},
+        )
+        assert missing.status_code == 404
+        assert missing.headers["X-Correlation-ID"] == "bankos-test-002"
+        assert missing.json()["error"]["code"] == "HTTP_404"
+        assert missing.json()["error"]["correlation_id"] == "bankos-test-002"
