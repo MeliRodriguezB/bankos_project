@@ -8,6 +8,7 @@ import 'core/network/session_storage.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/dashboard/presentation/screens/dashboard_screen.dart';
+import 'features/admin/presentation/screens/admin_dashboard_screen.dart';
 
 class BankOsApp extends StatefulWidget {
   const BankOsApp({super.key});
@@ -62,7 +63,19 @@ class _SessionGateState extends State<SessionGate> {
     }
 
     ApiClient.setGlobalAuthToken(token);
-    return const DashboardScreen();
+    return _hasAdminRole(token) ? const AdminDashboardScreen() : const DashboardScreen();
+  }
+
+  bool _hasAdminRole(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return false;
+      final payload = jsonDecode(utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))) ) as Map<String, dynamic>;
+      final roles = payload['roles'] as List<dynamic>? ?? [];
+      return roles.map((role) => role.toString().toUpperCase()).contains('ADMIN');
+    } catch (_) {
+      return false;
+    }
   }
 
   bool _isTokenNotExpired(String token) {
