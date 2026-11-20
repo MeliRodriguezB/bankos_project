@@ -217,7 +217,7 @@ def seed_database():
                 "account_number": "8880001234",
                 "alias": "Cuenta Neobanco Ágil",
                 "tenant_id": str(tenant2.id),
-                "user_id": str(uuid.uuid4()),
+                "user_id": str(user1.id),
                 "balance": Decimal("99999999.00"),
                 "currency": "COP",
                 "status": "ACTIVE",
