@@ -4,6 +4,7 @@ import '../../../../core/network/session_storage.dart';
 import '../../../../core/security/biometric_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/login_request.dart';
+import 'transaction_pin_setup_screen.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../../dashboard/presentation/screens/dashboard_screen.dart';
 import '../../../admin/presentation/screens/admin_dashboard_screen.dart';
@@ -90,10 +91,25 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
       setState(() => _isLoading = false);
-      if (!_useMock) await _offerBiometricSetup();
+      final isAdmin = !_useMock && response.user.roles.map((r) => r.toUpperCase()).contains('ADMIN');
+      Widget destination = isAdmin ? const AdminDashboardScreen() : const DashboardScreen();
+
+      // En modo API, consulta si el cliente ya tiene PIN antes de permitir operar.
+      if (!_useMock && !isAdmin) {
+        final pinStatus = await _apiClient.get('/users/me/transaction-pin') as Map<String, dynamic>;
+        final isPinConfigured = pinStatus['configured'] == true;
+        if (!isPinConfigured) {
+          destination = TransactionPinSetupScreen(
+            apiClient: _apiClient,
+            nextScreen: const DashboardScreen(),
+          );
+        } else {
+          await _offerBiometricSetup();
+        }
+      }
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => _useMock ? const DashboardScreen() : (response.user.roles.map((r) => r.toUpperCase()).contains('ADMIN') ? const AdminDashboardScreen() : const DashboardScreen())),
+        MaterialPageRoute(builder: (_) => destination),
       );
     } catch (e) {
       if (!mounted) return;
