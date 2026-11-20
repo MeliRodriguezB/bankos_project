@@ -238,7 +238,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
           // 2. Barra de accesos directos vinculada con Persona 3
           QuickActionsBar(
-            onTransfer: () async {
+            bankColor: _bankColor,
+          onTransfer: () async {
               final activeAccounts = data.accounts.where((a) => a.isActive).toList();
               if (activeAccounts.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
