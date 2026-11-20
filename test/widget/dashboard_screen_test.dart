@@ -29,7 +29,7 @@ void main() {
 
     // Comprobar elementos principales
     expect(find.text('Panel Principal'), findsOneWidget);
-    expect(find.text('Cooperativa Financiera Futuro'), findsOneWidget);
+    expect(find.text('Bancolombia'), findsOneWidget);
     expect(find.text('Mis Cuentas'), findsOneWidget);
     expect(find.text('Cuenta de Ahorros Principal'), findsOneWidget);
 
