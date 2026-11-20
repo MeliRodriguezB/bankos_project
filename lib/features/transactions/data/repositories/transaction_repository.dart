@@ -165,6 +165,8 @@ class ApiTransactionRepository implements TransactionRepository {
 }
 
 class MockTransactionRepository implements TransactionRepository {
+  // Keep mock retries consistent with the backend idempotency contract.
+  final Map<String, TransactionModel> _mockIdempotentResults = {};
   final List<TransactionModel> _mockHistory = [
     TransactionModel(
       id: 'tx-001',
@@ -245,6 +247,8 @@ class MockTransactionRepository implements TransactionRepository {
     String? description,
     required String idempotencyKey,
   }) async {
+    final cached = _mockIdempotentResults[idempotencyKey];
+    if (cached != null) return cached;
     await Future.delayed(const Duration(milliseconds: 700));
     if (pin != '1234') {
       throw ApiException(statusCode: 401, message: 'PIN incorrecto. (Usa: 1234)');
@@ -265,6 +269,7 @@ class MockTransactionRepository implements TransactionRepository {
       createdAt: DateTime.now(),
     );
     _mockHistory.insert(0, newTx);
+    _mockIdempotentResults[idempotencyKey] = newTx;
     return newTx;
   }
 
@@ -276,6 +281,8 @@ class MockTransactionRepository implements TransactionRepository {
     String? description,
     required String idempotencyKey,
   }) async {
+    final cached = _mockIdempotentResults[idempotencyKey];
+    if (cached != null) return cached;
     await Future.delayed(const Duration(milliseconds: 500));
     final newTx = TransactionModel(
       id: 'tx-${DateTime.now().millisecondsSinceEpoch}',
@@ -292,6 +299,7 @@ class MockTransactionRepository implements TransactionRepository {
       createdAt: DateTime.now(),
     );
     _mockHistory.insert(0, newTx);
+    _mockIdempotentResults[idempotencyKey] = newTx;
     return newTx;
   }
 
@@ -304,6 +312,8 @@ class MockTransactionRepository implements TransactionRepository {
     String? description,
     required String idempotencyKey,
   }) async {
+    final cached = _mockIdempotentResults[idempotencyKey];
+    if (cached != null) return cached;
     await Future.delayed(const Duration(milliseconds: 500));
     if (pin != '1234') {
       throw ApiException(statusCode: 401, message: 'PIN incorrecto. (Usa: 1234)');
@@ -323,6 +333,7 @@ class MockTransactionRepository implements TransactionRepository {
       createdAt: DateTime.now(),
     );
     _mockHistory.insert(0, newTx);
+    _mockIdempotentResults[idempotencyKey] = newTx;
     return newTx;
   }
 
