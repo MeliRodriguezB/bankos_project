@@ -2,7 +2,7 @@ from decimal import Decimal
 from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, cast, String
 
 from app.modules.accounts.models import Account
 from app.modules.accounts.schemas import (
@@ -166,7 +166,7 @@ class AccountService:
         """Lista cuentas y titulares únicamente dentro del tenant del ADMIN autenticado."""
         rows = (
             db.query(Account, User.full_name, User.email)
-            .join(User, User.id == Account.user_id)
+            .join(User, cast(User.id, String) == Account.user_id)
             .filter(Account.tenant_id == tenant_id)
             .order_by(Account.created_at.desc())
             .all()
