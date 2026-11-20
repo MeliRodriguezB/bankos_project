@@ -41,7 +41,7 @@ jobs:
         run: flutter test
 
       - name: Build web demo
-        run: flutter build web --release --base-href "/bankos_project/"
+        run: flutter build web --release --base-href "/bankos_project/" --dart-define=BANKOS_DEMO_MODE=true
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
