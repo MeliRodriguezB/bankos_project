@@ -93,10 +93,10 @@ jobs:
                   raise
 
           scenarios = [
-              ("cooperativa-futuro", "1002348911", "8880001234", "1000000.00"),
-              ("neobanco-agil", "8880001234", "1002348911", "2000000.00"),
+              ("cooperativa-futuro", "1002348911", "1002348922", "8880001234", "1000000.00"),
+              ("neobanco-agil", "8880001234", "8880005678", "1002348911", "2000000.00"),
           ]
-          for tenant_slug, expected_account, foreign_account, transfer_limit in scenarios:
+          for tenant_slug, expected_account, destination_account, foreign_account, transfer_limit in scenarios:
               customer = request("/auth/login", {
                   "tenant_slug": tenant_slug,
                   "email": "carlos@fintech.com",
@@ -105,6 +105,7 @@ jobs:
               accounts = request("/accounts", token=customer["access_token"])
               account_numbers = {account["account_number"] for account in accounts}
               assert expected_account in account_numbers, tenant_slug
+              assert destination_account in account_numbers, tenant_slug
               assert foreign_account not in account_numbers, tenant_slug
 
               admin = request("/auth/login", {
