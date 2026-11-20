@@ -46,6 +46,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String? _brandingPrimary;
 
   // Branding por tenant desde backend; fallback local si el endpoint no está disponible.
+  Color get _bankContrastText => (_dashboardData?.tenantName.toLowerCase().contains('bancolombia') ?? false) ? const Color(0xFF222222) : Colors.white;
+
   Color get _bankColor {
     final configured = _brandingPrimary;
     if (configured != null && configured.startsWith('#') && configured.length == 7) {
@@ -161,10 +163,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 color: _bankColor,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Text(
+              child: Text(
                 'BankOS',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: _bankContrastText,
                   fontWeight: FontWeight.w900,
                   fontSize: 14,
                 ),
