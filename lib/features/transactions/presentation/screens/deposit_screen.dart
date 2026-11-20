@@ -61,13 +61,8 @@ class _DepositScreenState extends State<DepositScreen> {
       );
 
       if (mounted) {
-        Navigator.pop(context, true); // Retornar true para refrescar saldo
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Depósito acreditado exitosamente.'),
-            backgroundColor: AppTheme.success,
-          ),
-        );
+        // El resultado true permite que la pantalla anterior actualice los saldos.
+        Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
@@ -129,7 +124,13 @@ class _DepositScreenState extends State<DepositScreen> {
                             ))
                         .toList(),
                     onChanged: (val) {
-                      if (val != null) setState(() => _selectedAccount = val);
+                      if (val != null) {
+                        setState(() {
+                          _selectedAccount = val;
+                          _currentIdempotencyKey = null;
+                          _errorMessage = null;
+                        });
+                      }
                     },
                   ),
                 ),
@@ -141,6 +142,7 @@ class _DepositScreenState extends State<DepositScreen> {
               TextFormField(
                 controller: _amountController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                onChanged: (_) => _currentIdempotencyKey = null,
                 decoration: InputDecoration(
                   prefixText: '\$ ',
                   suffixText: _selectedAccount.currency,
@@ -161,6 +163,7 @@ class _DepositScreenState extends State<DepositScreen> {
               const SizedBox(height: 6),
               TextFormField(
                 controller: _descController,
+                onChanged: (_) => _currentIdempotencyKey = null,
                 decoration: InputDecoration(
                   hintText: 'Ej. Nómina quincenal',
                   filled: true,
