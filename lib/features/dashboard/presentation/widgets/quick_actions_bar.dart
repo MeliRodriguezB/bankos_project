@@ -63,6 +63,8 @@ class QuickActionsBar extends StatelessWidget {
     required Color bankColor,
     required VoidCallback onTap,
   }) {
+    // Amarillo Bancolombia necesita un tono más oscuro para los iconos sobre blanco.
+    final iconColor = bankColor.value == const Color(0xFFFFD600).value ? const Color(0xFF9A7400) : bankColor;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -88,7 +90,7 @@ class QuickActionsBar extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Icon(icon, color: bankColor, size: 24),
+              child: Icon(icon, color: iconColor, size: 24),
             ),
             const SizedBox(height: 8),
             Text(
