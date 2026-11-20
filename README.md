@@ -134,10 +134,11 @@ Al iniciar el backend con `ENVIRONMENT=development`, el proceso de seed crea un 
 - **Institución:** Cooperativa Financiera Futuro (`cooperativa-futuro`)
 - **Correo:** `carlos@fintech.com`
 - **Contraseña de demostración:** `123456`
+- **PIN transaccional de demostración:** `1234` (solo seed local de desarrollo)
 - **Cuentas COP:** `1002348911` y `1002348922`
 - **Cuenta USD:** `2005541100`
 
-El PIN transaccional no se precarga: debe configurarse desde el flujo de seguridad de la aplicación. Los datos y credenciales anteriores son exclusivamente locales/de demostración; no deben habilitarse en un entorno público.
+El seed local configura el PIN `1234` para probar retiros y transferencias sin pasos manuales. Es una credencial débil y exclusiva del entorno de desarrollo; nunca debe reutilizarse ni habilitarse en un entorno público. En un entorno real, cada usuario debe configurar su propio PIN.
 
 La segunda institución contiene una cuenta de prueba aislada, pero no se crea automáticamente un usuario final para ella. No utilizar los datos de seed como cuentas reales.
 
