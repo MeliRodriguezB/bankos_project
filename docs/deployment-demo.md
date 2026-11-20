@@ -7,15 +7,15 @@ La versión web publicada desde esta rama es una **demostración de interfaz con
 ## Acceso a la demostración
 
 1. Abre la URL de GitHub Pages del repositorio. La compilación publicada inicia automáticamente en modo **MOCK**.
-3. Ingresa cualquier correo de demostración y la contraseña `123456`.
-4. El dashboard también carga automáticamente las cuentas e historial simulados. Puedes cambiar manualmente entre MOCK y API desde el selector.
-5. Para acciones simuladas que soliciten PIN, utiliza `1234`.
+2. Ingresa cualquier correo de demostración y la contraseña `123456`.
+3. El dashboard carga automáticamente las cuentas e historial simulados. Puedes cambiar manualmente entre MOCK y API desde el selector.
+4. Para acciones simuladas que soliciten PIN, utiliza `1234`.
 
 Los saldos, cuentas, tasas, depósitos, retiros y transferencias de este modo son datos ficticios y solo sirven para demostrar la interfaz y los flujos.
 
 ## Publicación
 
-El workflow `.github/workflows/deploy-demo-web.yml` compila Flutter Web, ejecuta análisis y pruebas, y publica `build/web` en GitHub Pages cuando hay cambios en `fix/withdrawal-screen-ci`.
+El workflow `.github/workflows/deploy-demo-web.yml` compila Flutter Web, ejecuta análisis y pruebas, y publica `build/web` en GitHub Pages cuando hay cambios en `feat/transactions` (y conserva compatibilidad con `fix/withdrawal-screen-ci`).
 
 En la configuración del repositorio, GitHub Pages debe permitir **Deploy from a branch: GitHub Actions**. La URL esperada para un repositorio de proyecto es:
 
