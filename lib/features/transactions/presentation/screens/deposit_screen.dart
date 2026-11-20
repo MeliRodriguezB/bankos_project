@@ -61,13 +61,7 @@ class _DepositScreenState extends State<DepositScreen> {
       );
 
       if (mounted) {
-        Navigator.pop(context, true); // Retornar true para refrescar saldo
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Depósito acreditado exitosamente.'),
-            backgroundColor: AppTheme.success,
-          ),
-        );
+        Navigator.pop(context, true); // El dashboard refresca el saldo y muestra el resultado.
       }
     } catch (e) {
       if (mounted) {
