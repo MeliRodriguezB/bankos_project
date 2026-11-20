@@ -109,6 +109,16 @@ class ApiClient {
     }
   }
 
+  Future<dynamic> put(String endpoint, Map<String, dynamic> body) async {
+    final uri = Uri.parse('$baseUrl$endpoint');
+    try {
+      final response = await _client.put(uri, headers: _buildHeaders(), body: jsonEncode(body));
+      return _processResponse(response);
+    } on http.ClientException {
+      throw ApiException(statusCode: 0, message: 'Error de conexión al actualizar recurso.');
+    }
+  }
+
   Future<dynamic> patch(String endpoint, [Map<String, dynamic>? body]) async {
     final uri = Uri.parse('$baseUrl$endpoint');
     try {
