@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';\n\nimport 'package:flutter/material.dart';
 import '../../../../core/network/session_storage.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/security/biometric_service.dart';
-import 'login_screen.dart';
+import 'login_screen.dart';\nimport '../../../dashboard/presentation/screens/dashboard_screen.dart';\nimport '../../../admin/presentation/screens/admin_dashboard_screen.dart';
 
 /// Screen shown when a saved session is protected by device biometrics.
 class BiometricLockScreen extends StatefulWidget {
@@ -76,9 +76,3 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
   );
 }
 
-/// Placeholder destination replaced by the SessionGate's authenticated route.
-class SessionGateDestination extends StatelessWidget {
-  const SessionGateDestination({super.key});
-  @override
-  Widget build(BuildContext context) => const SessionGate();
-}
