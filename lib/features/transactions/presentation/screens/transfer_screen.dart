@@ -46,6 +46,11 @@ class _TransferScreenState extends State<TransferScreen> {
     super.dispose();
   }
 
+  // A new payload must use a new key; failed retries of the same payload keep theirs.
+  void _invalidateIdempotencyKey() {
+    _currentIdempotencyKey = null;
+  }
+
   Future<void> _requestQuoteAndConfirm() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -290,7 +295,13 @@ class _TransferScreenState extends State<TransferScreen> {
                             ))
                         .toList(),
                     onChanged: (val) {
-                      if (val != null) setState(() => _selectedAccount = val);
+                      if (val != null) {
+                        setState(() {
+                          _selectedAccount = val;
+                          _invalidateIdempotencyKey();
+                          _errorMessage = null;
+                        });
+                      }
                     },
                   ),
                 ),
@@ -303,6 +314,7 @@ class _TransferScreenState extends State<TransferScreen> {
               TextFormField(
                 controller: _destinationController,
                 keyboardType: TextInputType.number,
+                onChanged: (_) => _invalidateIdempotencyKey(),
                 decoration: InputDecoration(
                   hintText: 'Ej. 1002348922',
                   filled: true,
@@ -319,6 +331,7 @@ class _TransferScreenState extends State<TransferScreen> {
               TextFormField(
                 controller: _amountController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                onChanged: (_) => _invalidateIdempotencyKey(),
                 decoration: InputDecoration(
                   prefixText: '\$ ',
                   suffixText: _selectedAccount.currency,
@@ -340,6 +353,7 @@ class _TransferScreenState extends State<TransferScreen> {
               const SizedBox(height: 6),
               TextFormField(
                 controller: _descController,
+                onChanged: (_) => _invalidateIdempotencyKey(),
                 decoration: InputDecoration(
                   hintText: 'Ej. Pago de arriendo',
                   filled: true,
