@@ -7,6 +7,7 @@ from app.modules.accounts.schemas import (
     AccountResponse,
     AccountDetailResponse,
     DashboardResponse,
+    TenantAdminAccountResponse,
 )
 from app.modules.accounts.service import AccountService
 
@@ -127,4 +128,20 @@ def deactivate_account(
         currency=acc.currency,
         status=acc.status,
         created_at=acc.created_at,
+    )
+
+
+@router.get(
+    "/admin/accounts",
+    response_model=list[TenantAdminAccountResponse],
+    summary="Listar cuentas de la institución (solo ADMIN)",
+)
+def get_tenant_accounts_admin(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_roles("ADMIN")),
+):
+    """La consulta se limita al tenant del administrador autenticado."""
+    return AccountService.get_accounts_for_tenant_admin(
+        db=db,
+        tenant_id=current_user["tenant_id"],
     )
