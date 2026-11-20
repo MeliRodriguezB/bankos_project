@@ -21,19 +21,18 @@ class DepositScreen extends StatefulWidget {
 class _DepositScreenState extends State<DepositScreen> {
   final _formKey = GlobalKey<FormState>();
   late AccountModel _selectedAccount;
-  final _amountController = TextEditingController(text: '100000.00');
+  final _amountController = TextEditingController();
   final _descController = TextEditingController();
 
   bool _isProcessing = false;
   String? _errorMessage;
+  String? _currentIdempotencyKey;
 
   @override
   void initState() {
     super.initState();
-    _selectedAccount = widget.availableAccounts.firstWhere(
-      (a) => a.isActive,
-      orElse: () => widget.availableAccounts.first,
-    );
+    final activeAccounts = widget.availableAccounts.where((a) => a.isActive).toList();
+    if (activeAccounts.isNotEmpty) _selectedAccount = activeAccounts.first;
   }
 
   @override
@@ -52,13 +51,13 @@ class _DepositScreenState extends State<DepositScreen> {
     });
 
     try {
-      final key = 'idem-dep-${DateTime.now().millisecondsSinceEpoch}';
+      _currentIdempotencyKey ??= 'idem-dep-${DateTime.now().millisecondsSinceEpoch}';
       await widget.repository.deposit(
         accountId: _selectedAccount.id,
         amount: _amountController.text.trim(),
         currency: _selectedAccount.currency,
         description: _descController.text.isEmpty ? null : _descController.text,
-        idempotencyKey: key,
+        idempotencyKey: _currentIdempotencyKey!,
       );
 
       if (mounted) {
@@ -82,6 +81,12 @@ class _DepositScreenState extends State<DepositScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!widget.availableAccounts.any((a) => a.isActive)) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Depositar Fondos')),
+        body: const Center(child: Padding(padding: EdgeInsets.all(24), child: Text('No tienes cuentas activas disponibles para recibir depósitos.'))),
+      );
+    }
     return Scaffold(
       appBar: AppBar(title: const Text('Depositar Fondos')),
       body: SingleChildScrollView(
