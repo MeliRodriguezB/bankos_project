@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_current_user, get_db
@@ -41,7 +42,7 @@ def get_platform_admin_status(
 ):
     """Confirma el privilegio global consultando la base de datos, no solo el rol del tenant."""
     is_platform_admin = db.query(PlatformAdmin).filter(
-        PlatformAdmin.user_id == current_user["user_id"],
+        PlatformAdmin.user_id == UUID(current_user["user_id"]),
         PlatformAdmin.is_active.is_(True),
     ).first() is not None
     return {"is_platform_admin": is_platform_admin}
