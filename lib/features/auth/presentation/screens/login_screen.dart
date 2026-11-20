@@ -244,7 +244,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
+                  Text(
                     'Experiencia de $_selectedBankName · BankOS',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
