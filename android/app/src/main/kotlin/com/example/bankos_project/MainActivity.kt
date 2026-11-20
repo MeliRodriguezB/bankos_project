@@ -2,4 +2,5 @@ package com.example.bankos_project
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 
-class MainActivity : FlutterActivity()
+// FlutterFragmentActivity is required by local_auth for biometric prompts.
+class MainActivity : FlutterFragmentActivity()
