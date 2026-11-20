@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../dashboard/data/models/account_model.dart';
@@ -148,6 +149,7 @@ class _TransferScreenState extends State<TransferScreen> {
                 controller: pinController,
                 obscureText: true,
                 keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 maxLength: 4,
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 22, letterSpacing: 8, fontWeight: FontWeight.bold),
@@ -186,13 +188,7 @@ class _TransferScreenState extends State<TransferScreen> {
 
                           if (mounted) {
                             Navigator.pop(ctx); // Cerrar modal
-                            Navigator.pop(context, true); // Volver al dashboard con éxito
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('¡Transferencia completada con éxito!'),
-                                backgroundColor: AppTheme.success,
-                              ),
-                            );
+                            Navigator.pop(context, true); // El dashboard refresca y muestra el éxito.
                           }
                         } catch (e) {
                           setModalState(() => _isTransferring = false);
