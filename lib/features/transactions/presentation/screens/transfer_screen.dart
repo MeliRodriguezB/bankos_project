@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../dashboard/data/models/account_model.dart';
@@ -153,6 +154,7 @@ class _TransferScreenState extends State<TransferScreen> {
                 controller: pinController,
                 obscureText: true,
                 keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 maxLength: 4,
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 22, letterSpacing: 8, fontWeight: FontWeight.bold),
