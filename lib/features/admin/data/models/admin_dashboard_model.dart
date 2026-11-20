@@ -1,20 +1,26 @@
-class AdminCurrencyBalance {
- final String currency; final String totalBalance; final int activeAccountsCount;
- AdminCurrencyBalance({required this.currency,required this.totalBalance,required this.activeAccountsCount});
- factory AdminCurrencyBalance.fromJson(Map<String,dynamic> j)=>AdminCurrencyBalance(currency:j['currency']?.toString()??'',totalBalance:j['total_balance']?.toString()??'0',activeAccountsCount:(j['active_accounts_count'] as num?)?.toInt()??0);
-}
-class AdminTransactionSummary {
- final String status,type,currency,totalAmount; final int count;
- AdminTransactionSummary({required this.status,required this.type,required this.currency,required this.totalAmount,required this.count});
- factory AdminTransactionSummary.fromJson(Map<String,dynamic> j)=>AdminTransactionSummary(status:j['status']?.toString()??'',type:j['type']?.toString()??'',currency:j['currency']?.toString()??'',totalAmount:j['total_amount']?.toString()??'0',count:(j['count'] as num?)?.toInt()??0);
-}
 class AdminDashboardModel {
- final String tenantId,tenantName; final int activeMemberships,totalAccounts,activeAccounts,inactiveAccounts,transactionsTotal; final List<AdminCurrencyBalance> balances; final List<AdminTransactionSummary> transactions;
- AdminDashboardModel({required this.tenantId,required this.tenantName,required this.activeMemberships,required this.totalAccounts,required this.activeAccounts,required this.inactiveAccounts,required this.transactionsTotal,required this.balances,required this.transactions});
- factory AdminDashboardModel.fromJson(Map<String,dynamic> j)=>AdminDashboardModel(tenantId:j['tenant_id']?.toString()??'',tenantName:j['tenant_name']?.toString()??'Institución',activeMemberships:(j['active_memberships'] as num?)?.toInt()??0,totalAccounts:(j['total_accounts'] as num?)?.toInt()??0,activeAccounts:(j['active_accounts'] as num?)?.toInt()??0,inactiveAccounts:(j['inactive_accounts'] as num?)?.toInt()??0,transactionsTotal:(j['transactions_total'] as num?)?.toInt()??0,balances:(j['balances_by_currency'] as List<dynamic>? ?? []).map((x)=>AdminCurrencyBalance.fromJson(x as Map<String,dynamic>)).toList(),transactions:(j['transactions_by_status_currency'] as List<dynamic>? ?? []).map((x)=>AdminTransactionSummary.fromJson(x as Map<String,dynamic>)).toList());
+  final int banksTotal, banksActive, usersTotal, accountsTotal, accountsActive, transactionsTotal;
+  final String transactionVolume;
+  const AdminDashboardModel({required this.banksTotal, required this.banksActive, required this.usersTotal, required this.accountsTotal, required this.accountsActive, required this.transactionsTotal, required this.transactionVolume});
+  factory AdminDashboardModel.fromJson(Map<String,dynamic> j)=>AdminDashboardModel(
+    banksTotal:(j['banks_total'] as num?)?.toInt()??0,
+    banksActive:(j['banks_active'] as num?)?.toInt()??0,
+    usersTotal:(j['users_total'] as num?)?.toInt()??0,
+    accountsTotal:(j['accounts_total'] as num?)?.toInt()??0,
+    accountsActive:(j['accounts_active'] as num?)?.toInt()??0,
+    transactionsTotal:(j['transactions_total'] as num?)?.toInt()??0,
+    transactionVolume:j['transaction_volume']?.toString()??'0');
+}
+class AdminBankModel {
+  final String id,name,slug,status,primaryColor,secondaryColor,accentColor;
+  const AdminBankModel({required this.id,required this.name,required this.slug,required this.status,required this.primaryColor,required this.secondaryColor,required this.accentColor});
+  factory AdminBankModel.fromJson(Map<String,dynamic> j){
+    final b=j['branding'] as Map<String,dynamic>? ?? {};
+    return AdminBankModel(id:j['id']?.toString()??'',name:j['name']?.toString()??'',slug:j['slug']?.toString()??'',status:j['status']?.toString()??'INACTIVE',primaryColor:b['primary_color']?.toString()??'#145DA0',secondaryColor:b['secondary_color']?.toString()??'#FFFFFF',accentColor:b['accent_color']?.toString()??'#F4B942');
+  }
 }
 class AdminAccountModel {
- final String id,accountNumberMasked,alias,balance,currency,status,ownerName,ownerEmail;
- AdminAccountModel({required this.id,required this.accountNumberMasked,required this.alias,required this.balance,required this.currency,required this.status,required this.ownerName,required this.ownerEmail});
- factory AdminAccountModel.fromJson(Map<String,dynamic> j)=>AdminAccountModel(id:j['id']?.toString()??'',accountNumberMasked:j['account_number_masked']?.toString()??'',alias:j['alias']?.toString()??'Cuenta',balance:j['balance']?.toString()??'0',currency:j['currency']?.toString()??'',status:j['status']?.toString()??'',ownerName:j['owner_name']?.toString()??'Titular',ownerEmail:j['owner_email']?.toString()??'');
+  final String id,accountNumberMasked,alias,balance,currency,status,ownerName,ownerEmail,bank;
+  const AdminAccountModel({required this.id,required this.accountNumberMasked,required this.alias,required this.balance,required this.currency,required this.status,required this.ownerName,required this.ownerEmail,required this.bank});
+  factory AdminAccountModel.fromJson(Map<String,dynamic> j)=>AdminAccountModel(id:j['id']?.toString()??'',accountNumberMasked:j['account_number_masked']?.toString()??j['account_number']?.toString()??'',alias:j['alias']?.toString()??'Cuenta',balance:j['balance']?.toString()??'0',currency:j['currency']?.toString()??'',status:j['status']?.toString()??'',ownerName:j['owner_name']?.toString()??'Titular',ownerEmail:j['owner_email']?.toString()??'',bank:j['bank']?.toString()??'Banco');
 }
