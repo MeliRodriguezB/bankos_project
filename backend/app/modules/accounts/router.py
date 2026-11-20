@@ -8,6 +8,7 @@ from app.modules.accounts.schemas import (
     AccountDetailResponse,
     DashboardResponse,
     TenantAdminAccountResponse,
+    TenantAdminDashboardResponse,
 )
 from app.modules.accounts.service import AccountService
 
@@ -142,6 +143,22 @@ def get_tenant_accounts_admin(
 ):
     """La consulta se limita al tenant del administrador autenticado."""
     return AccountService.get_accounts_for_tenant_admin(
+        db=db,
+        tenant_id=current_user["tenant_id"],
+    )
+
+
+@router.get(
+    "/admin/dashboard",
+    response_model=TenantAdminDashboardResponse,
+    summary="Consultar métricas institucionales (solo ADMIN)",
+)
+def get_tenant_admin_dashboard(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_roles("ADMIN")),
+):
+    """Métricas agregadas de la institución del administrador autenticado."""
+    return AccountService.get_tenant_admin_dashboard(
         db=db,
         tenant_id=current_user["tenant_id"],
     )
