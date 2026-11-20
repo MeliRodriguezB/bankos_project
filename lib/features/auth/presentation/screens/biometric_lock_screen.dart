@@ -5,6 +5,7 @@ import '../../../../core/network/session_storage.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/security/biometric_service.dart';
 import 'login_screen.dart';
+import 'transaction_pin_setup_screen.dart';
 import '../../../dashboard/presentation/screens/dashboard_screen.dart';
 import '../../../admin/presentation/screens/admin_dashboard_screen.dart';
 
@@ -45,8 +46,23 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
       final token = await SessionStorage().readToken();
       if (!mounted) return;
       final isAdmin = _hasAdminRole(token ?? '');
+      Widget destination = isAdmin ? const AdminDashboardScreen() : const DashboardScreen();
+      if (!isAdmin) {
+        try {
+          final pinStatus = await ApiClient().get('/users/me/transaction-pin') as Map<String, dynamic>;
+          if (pinStatus['configured'] != true) {
+            destination = TransactionPinSetupScreen(
+              apiClient: ApiClient(),
+              nextScreen: const DashboardScreen(),
+            );
+          }
+        } catch (_) {
+          setState(() => _error = 'No se pudo verificar la configuración del PIN. Cierra sesión e ingresa nuevamente.');
+          return;
+        }
+      }
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => isAdmin ? const AdminDashboardScreen() : const DashboardScreen()),
+        MaterialPageRoute(builder: (_) => destination),
       );
     } else {
       setState(() => _error = 'No fue posible validar la biometría. Inténtalo de nuevo.');
