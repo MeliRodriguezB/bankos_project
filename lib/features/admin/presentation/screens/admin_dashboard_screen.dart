@@ -8,192 +8,64 @@ import '../../data/repositories/admin_dashboard_repository.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   final AdminDashboardRepository? repository;
-
   const AdminDashboardScreen({super.key, this.repository});
-
   @override
-  State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+  State<AdminDashboardScreen> createState()=>_AdminDashboardScreenState();
 }
 
-class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
-  late final AdminDashboardRepository _repository;
-  AdminDashboardModel? _data;
-  List<AdminAccountModel> _accounts = [];
-  bool _loading = true;
-  String? _error;
-  String? _accountsError;
-
-  @override
-  void initState() {
-    super.initState();
-    _repository = widget.repository ?? AdminDashboardRepository();
-    _load();
-  }
-
-  Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-      _accountsError = null;
-      _accounts = [];
-    });
-
-    try {
-      final data = await _repository.getDashboard();
-      if (!mounted) return;
-      setState(() => _data = data);
-
-      try {
-        final accounts = await _repository.getAccounts();
-        if (mounted) setState(() => _accounts = accounts);
-      } catch (accountError) {
-        if (mounted) setState(() => _accountsError = accountError.toString());
-      }
-    } catch (error) {
-      if (!mounted) return;
-      setState(() => _error = error.toString());
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  Future<void> _logout() async {
-    ApiClient.setGlobalAuthToken(null);
-    await SessionStorage().clearToken();
-    if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (_) => false,
-    );
-  }
-
-  Widget _metric(String title, int value, IconData icon) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Icon(icon, color: AppTheme.accent, size: 28),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
-                  Text('$value', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 22)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _amount(String value) => (double.tryParse(value) ?? 0).toStringAsFixed(2);
-
-  Widget _accountCard(AdminAccountModel account) {
-    return Card(
-      child: ListTile(
-        leading: const Icon(Icons.account_balance_wallet_outlined, color: AppTheme.accent),
-        title: Text(account.alias),
-        subtitle: Text('${account.ownerName} · ${account.accountNumberMasked}'),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text('${account.currency} ${_amount(account.balance)}', style: const TextStyle(fontWeight: FontWeight.w600)),
-            Text(account.status, style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('BankOS · Administración'),
-        actions: [
-          IconButton(onPressed: _load, icon: const Icon(Icons.refresh), tooltip: 'Actualizar'),
-          IconButton(onPressed: _logout, icon: const Icon(Icons.logout), tooltip: 'Cerrar sesión'),
-        ],
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.cloud_off, color: AppTheme.error, size: 48),
-                        const SizedBox(height: 12),
-                        const Text('No se pudo cargar el dashboard'),
-                        Text(_error!, textAlign: TextAlign.center),
-                        ElevatedButton(onPressed: _load, child: const Text('Reintentar')),
-                      ],
-                    ),
-                  ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _load,
-                  child: ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      Text(_data!.tenantName, style: Theme.of(context).textTheme.headlineMedium),
-                      const Text('Resumen institucional', style: TextStyle(color: AppTheme.textSecondary)),
-                      const SizedBox(height: 12),
-                      _metric('Membresías activas', _data!.activeMemberships, Icons.people_alt_outlined),
-                      _metric('Total cuentas', _data!.totalAccounts, Icons.account_balance_wallet_outlined),
-                      _metric('Cuentas activas', _data!.activeAccounts, Icons.check_circle_outline),
-                      _metric('Cuentas inactivas', _data!.inactiveAccounts, Icons.pause_circle_outline),
-                      _metric('Transacciones', _data!.transactionsTotal, Icons.receipt_long_outlined),
-                      const SizedBox(height: 16),
-                      Text('Balances por moneda', style: Theme.of(context).textTheme.titleLarge),
-                      const SizedBox(height: 8),
-                      if (_data!.balances.isEmpty)
-                        const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('Sin balances disponibles')))
-                      else
-                        ..._data!.balances.map(
-                          (balance) => Card(
-                            child: ListTile(
-                              leading: const Icon(Icons.currency_exchange, color: AppTheme.accent),
-                              title: Text(balance.currency),
-                              subtitle: Text('${balance.activeAccountsCount} cuentas activas'),
-                              trailing: Text(_amount(balance.totalBalance), style: const TextStyle(fontWeight: FontWeight.bold)),
-                            ),
-                          ),
-                        ),
-                      const SizedBox(height: 16),
-                      Text('Cuentas institucionales', style: Theme.of(context).textTheme.titleLarge),
-                      const SizedBox(height: 8),
-                      if (_accountsError != null)
-                        Card(child: Padding(padding: const EdgeInsets.all(12), child: Text('No se pudo cargar el listado: $_accountsError')))
-                      else if (_accounts.isEmpty)
-                        const Card(child: Padding(padding: EdgeInsets.all(12), child: Text('No hay cuentas registradas')))
-                      else
-                        ..._accounts.map(_accountCard),
-                      const SizedBox(height: 16),
-                      Text('Operaciones por estado, tipo y moneda', style: Theme.of(context).textTheme.titleLarge),
-                      const SizedBox(height: 8),
-                      if (_data!.transactions.isEmpty)
-                        const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('Sin operaciones registradas')))
-                      else
-                        ..._data!.transactions.map(
-                          (transaction) => Card(
-                            child: ListTile(
-                              title: Text('${transaction.type} · ${transaction.status}'),
-                              subtitle: Text('${transaction.count} operaciones · ${transaction.currency}'),
-                              trailing: Text(_amount(transaction.totalAmount), style: const TextStyle(fontWeight: FontWeight.w600)),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-    );
-  }
+class _AdminDashboardScreenState extends State<AdminDashboardScreen>{
+ late final AdminDashboardRepository _repo;
+ AdminDashboardModel? _data;
+ List<AdminBankModel> _banks=[];
+ List<AdminAccountModel> _accounts=[];
+ bool _loading=true;
+ String? _error;
+ @override void initState(){super.initState();_repo=widget.repository??AdminDashboardRepository();_load();}
+ Future<void> _load() async{
+  setState(()=>_loading=true); _error=null;
+  try{
+   final d=await _repo.getDashboard(); final banks=await _repo.getBanks(); final accounts=await _repo.getAccounts();
+   if(!mounted)return; setState(()=>_data=d);setState(()=>_banks=banks);setState(()=>_accounts=accounts);
+  }catch(e){if(mounted)setState(()=>_error=e.toString());}
+  finally{if(mounted)setState(()=>_loading=false);}
+ }
+ Future<void> _logout() async{
+  ApiClient.setGlobalAuthToken(null);await SessionStorage().clearToken();
+  if(!mounted)return;Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder:(_)=>const LoginScreen()),(_)=>false);
+ }
+ int _color(String hex){final s=hex.replaceFirst('#','');return int.parse('FF$s',radix:16);}
+ Widget _metric(String label,String value,IconData icon){
+  return Container(decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(18),border:Border.all(color:AppTheme.border)),padding:const EdgeInsets.all(15),child:Row(children:[Container(width:40,height:40,decoration:BoxDecoration(color:AppTheme.accent.withOpacity(.10),borderRadius:BorderRadius.circular(12)),child:Icon(icon,color:AppTheme.accent)),const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(label,style:const TextStyle(color:AppTheme.textSecondary,fontSize:12)),Text(value,style:const TextStyle(fontSize:22,fontWeight:FontWeight.w800))]))]));
+ }
+ Future<void> _createBank() async{
+  final name=TextEditingController(),slug=TextEditingController();
+  final key=GlobalKey<FormState>();
+  final result=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(title:const Text('Registrar institución'),content:Form(key:key,child:Column(mainAxisSize:MainAxisSize.min,children:[TextFormField(controller:name,decoration:const InputDecoration(labelText:'Nombre del banco'),validator:(v)=>v==null||v.trim().isEmpty?'Campo requerido':null),TextFormField(controller:slug,decoration:const InputDecoration(labelText:'Slug (ej. banco-nuevo)'),validator:(v)=>v==null||v.trim().isEmpty?'Campo requerido':null)])),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancelar')),FilledButton(onPressed:()=>key.currentState!.validate()?Navigator.pop(ctx,true):null,child:const Text('Crear'))]));
+  if(result==true){try{await _repo.createBank(name:name.text.trim(),slug:slug.text.trim());if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Institución creada')));await _load();}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('No se pudo crear: $e')));}}
+  name.dispose();slug.dispose();
+ }
+ Future<void> _toggleBank(AdminBankModel bank) async{
+  final next=bank.status=='ACTIVE'?'INACTIVE':'ACTIVE';
+  try{await _repo.updateBank(bank,status:next);await _load();}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('No se pudo actualizar: $e')));}
+ }
+ Widget _bankCard(AdminBankModel b){
+  final primary=Color(_color(b.primaryColor));
+  final active=b.status=='ACTIVE';
+  return Card(clipBehavior:Clip.antiAlias,child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+   Container(height:6,color:primary),
+   ListTile(leading:Container(width:44,height:44,decoration:BoxDecoration(color:primary.withOpacity(.12),borderRadius:BorderRadius.circular(14)),child:Icon(Icons.account_balance_rounded,color:primary)),title:Text(b.name,style:const TextStyle(fontWeight:FontWeight.w800)),subtitle:Text(b.slug),trailing:Container(padding:const EdgeInsets.symmetric(horizontal:10,vertical:5),decoration:BoxDecoration(color:active?AppTheme.success.withOpacity(.1):AppTheme.warning.withOpacity(.13),borderRadius:BorderRadius.circular(20)),child:Text(active?'ACTIVO':'INACTIVO',style:TextStyle(color:active?AppTheme.success:AppTheme.warning,fontWeight:FontWeight.w700,fontSize:11)))),
+   Padding(padding:const EdgeInsets.fromLTRB(16,0,16,12),child:Row(children:[_colorDot(b.primaryColor,'Primario'),const SizedBox(width:12),_colorDot(b.secondaryColor,'Secundario'),const SizedBox(width:12),_colorDot(b.accentColor,'Acento'),const Spacer(),TextButton.icon(onPressed:()=>_toggleBank(b),icon:Icon(active?Icons.pause_circle_outline:Icons.play_circle_outline),label:Text(active?'Desactivar':'Activar'))]))
+  ]));
+ }
+ Widget _colorDot(String hex,String label){return Row(mainAxisSize:MainAxisSize.min,children:[Container(width:13,height:13,decoration:BoxDecoration(color:Color(_color(hex)),shape:BoxShape.circle,border:Border.all(color:AppTheme.border))),const SizedBox(width:4),Text(label,style:const TextStyle(fontSize:11,color:AppTheme.textSecondary))]);}
+ Widget _accountCard(AdminAccountModel a){return Card(child:ListTile(leading:const Icon(Icons.account_balance_wallet_outlined,color:AppTheme.accent),title:Text(a.alias),subtitle:Text('${a.bank} · ${a.ownerName} · ${a.accountNumberMasked}',maxLines:2,overflow:TextOverflow.ellipsis),trailing:Column(mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.end,children:[Text('${a.currency} ${a.balance}',style:const TextStyle(fontWeight:FontWeight.w700)),Text(a.status,style:const TextStyle(fontSize:11,color:AppTheme.textSecondary))])));}
+ @override Widget build(BuildContext context){
+  return Scaffold(backgroundColor:AppTheme.background,appBar:AppBar(title:const Text('BankOS · Plataforma'),actions:[IconButton(onPressed:_load,icon:const Icon(Icons.refresh),tooltip:'Actualizar'),IconButton(onPressed:_logout,icon:const Icon(Icons.logout),tooltip:'Cerrar sesión')]),body:_loading?const Center(child:CircularProgressIndicator()):_error!=null?Center(child:Padding(padding:const EdgeInsets.all(24),child:Column(mainAxisSize:MainAxisSize.min,children:[const Icon(Icons.cloud_off,size:44,color:AppTheme.error),const Text('No se pudo cargar la administración global'),Text(_error!,textAlign:TextAlign.center),FilledButton(onPressed:_load,child:const Text('Reintentar'))])):RefreshIndicator(onRefresh:_load,child:ListView(padding:const EdgeInsets.all(16),children:[
+  Container(padding:const EdgeInsets.all(20),decoration:BoxDecoration(gradient:AppTheme.cardDarkGradient,borderRadius:BorderRadius.circular(24)),child:const Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('CONTROL CENTRAL',style:TextStyle(color:Colors.white70,letterSpacing:1.2,fontSize:11)),SizedBox(height:8),Text('Panel de plataforma',style:TextStyle(color:Colors.white,fontSize:24,fontWeight:FontWeight.w800)),SizedBox(height:4),Text('Supervisión de instituciones, cuentas y operaciones',style:TextStyle(color:Colors.white70))])),
+  const SizedBox(height:16),GridView.count(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),crossAxisCount:2,mainAxisSpacing:10,crossAxisSpacing:10,childAspectRatio:1.7,children:[_metric('Instituciones','${_data?.banksTotal??0}',Icons.account_balance),_metric('Bancos activos','${_data?.banksActive??0}',Icons.verified_outlined),_metric('Usuarios','${_data?.usersTotal??0}',Icons.people_alt_outlined),_metric('Cuentas','${_data?.accountsTotal??0}',Icons.wallet_outlined),_metric('Cuentas activas','${_data?.accountsActive??0}',Icons.check_circle_outline),_metric('Transacciones','${_data?.transactionsTotal??0}',Icons.receipt_long_outlined)]),
+  const SizedBox(height:18),Row(children:[Expanded(child:Text('Instituciones financieras',style:Theme.of(context).textTheme.titleLarge)),FilledButton.icon(onPressed:_createBank,icon:const Icon(Icons.add),label:const Text('Agregar'))]),
+  const SizedBox(height:8),if(_banks.isEmpty)const Card(child:Padding(padding:EdgeInsets.all(16),child:Text('No hay instituciones registradas')))else ..._banks.map(_bankCard),
+  const SizedBox(height:18),Text('Cuentas de la plataforma',style:Theme.of(context).textTheme.titleLarge),const SizedBox(height:8),if(_accounts.isEmpty)const Card(child:Padding(padding:EdgeInsets.all(16),child:Text('No hay cuentas registradas')))else ..._accounts.map(_accountCard)
+ ])));
+ }
 }
