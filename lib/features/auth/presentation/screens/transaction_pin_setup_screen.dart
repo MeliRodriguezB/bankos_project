@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -114,6 +115,7 @@ class _TransactionPinSetupScreenState extends State<TransactionPinSetupScreen> {
                     obscureText: _obscure,
                     keyboardType: TextInputType.number,
                     maxLength: 4,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: InputDecoration(
                       labelText: 'Nuevo PIN (4 dígitos)',
                       prefixIcon: const Icon(Icons.pin),
@@ -129,6 +131,7 @@ class _TransactionPinSetupScreenState extends State<TransactionPinSetupScreen> {
                     obscureText: _obscure,
                     keyboardType: TextInputType.number,
                     maxLength: 4,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: const InputDecoration(labelText: 'Confirma tu PIN', prefixIcon: Icon(Icons.check_circle_outline), counterText: ''),
                     validator: (value) {
                       final pinError = _validatePin(value);
