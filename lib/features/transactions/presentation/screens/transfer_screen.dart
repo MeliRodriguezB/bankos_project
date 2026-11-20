@@ -83,7 +83,7 @@ class _TransferScreenState extends State<TransferScreen> {
   void _showConfirmationDialog(TransferQuoteModel quote) {
     final pinController = TextEditingController();
     // Generar idempotency key única para este intento de transferencia
-    _currentIdempotencyKey ??= 'idem-${DateTime.now().millisecondsSinceEpoch}';
+    _currentIdempotencyKey ??= 'idem-${DateTime.now().microsecondsSinceEpoch}';
 
     showModalBottomSheet(
       context: context,
