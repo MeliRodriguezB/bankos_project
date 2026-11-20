@@ -33,8 +33,9 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      # Informational lint messages should not block CI; warnings and errors still fail.
       - name: Analyze Flutter code
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos
 
       - name: Run Flutter tests
         run: flutter test
