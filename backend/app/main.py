@@ -12,7 +12,8 @@ from app.db.session import engine, SessionLocal
 
 # Importar modelos ORM
 from app.modules.tenants.models import Tenant, TenantMembership
-from app.modules.users.models import User
+from app.modules.users.models import User, PlatformAdmin
+from app.modules.admin.models import BankConfiguration, Currency, BankExchangeRate
 from app.modules.roles.models import Role, membership_roles
 from app.modules.accounts.models import Account
 from app.modules.transactions.models import Transaction
@@ -22,6 +23,7 @@ from app.modules.auth.router import router as auth_router
 from app.modules.accounts.router import router as accounts_router
 from app.modules.transactions.router import router as transactions_router
 from app.modules.users.router import router as users_router
+from app.modules.admin.router import router as admin_router
 
 
 def seed_database():
@@ -55,6 +57,16 @@ def seed_database():
             )
             db.add(tenant2)
             db.flush()
+
+        # Seed de divisas base para la configuración global.
+        base_currencies = [
+            ("COP", "Peso colombiano", "$"),
+            ("USD", "Dólar estadounidense", "US$"),
+            ("EUR", "Euro", "€"),
+        ]
+        for code, name, symbol in base_currencies:
+            if not db.query(Currency).filter(Currency.code == code).first():
+                db.add(Currency(code=code, name=name, symbol=symbol, is_active=True))
 
         # 2. Roles
         role_customer = db.query(Role).filter(
@@ -149,6 +161,15 @@ def seed_database():
                 db.flush()
             elif admin_membership.status != "ACTIVE":
                 admin_membership.status = "ACTIVE"
+
+            # Registrar también como administrador global de la plataforma.
+            platform_admin = db.query(PlatformAdmin).filter(
+                PlatformAdmin.user_id == admin_user.id
+            ).first()
+            if platform_admin is None:
+                db.add(PlatformAdmin(user_id=admin_user.id, is_active=True))
+            elif not platform_admin.is_active:
+                platform_admin.is_active = True
 
             assignment = db.execute(
                 membership_roles.select().where(
@@ -319,3 +340,4 @@ app.include_router(auth_router, prefix="/api/v1")
 app.include_router(accounts_router, prefix="/api/v1")
 app.include_router(transactions_router, prefix="/api/v1")
 app.include_router(users_router, prefix="/api/v1")
+app.include_router(admin_router, prefix="/api/v1")
