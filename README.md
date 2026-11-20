@@ -35,8 +35,8 @@ La base de datos de demostración se inicializa con cuatro tenants colombianos:
 
 | Tenant | Slug | Identidad visual |
 |---|---|---|
-| Bancolombia | `bancolombia` | Verde y blanco |
-| Banco Popular | `banco-popular` | Rojo y blanco |
+| Bancolombia | `bancolombia` | Amarillo y blanco |
+| Banco Popular | `banco-popular` | Verde y blanco |
 | Nequi | `nequi` | Magenta |
 | Nu | `nu` | Violeta |
 
