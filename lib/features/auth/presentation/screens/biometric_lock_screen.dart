@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import '../../../../core/network/session_storage.dart';
 import '../../../../core/network/api_client.dart';
@@ -22,50 +20,44 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
   bool _busy = false;
   String? _error;
 
-  bool _hasAdminRole(String token) {
-    try {
-      final parts = token.split('.');
-      if (parts.length != 3) return false;
-      final payload = jsonDecode(
-        utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
-      ) as Map<String, dynamic>;
-      final roles = payload['roles'] as List<dynamic>? ?? [];
-      return roles.map((r) => r.toString().toUpperCase()).contains('ADMIN');
-    } catch (_) {
-      return false;
-    }
-  }
-
   Future<void> _unlock() async {
     if (_busy) return;
     setState(() { _busy = true; _error = null; });
     final success = await _biometric.authenticate();
     if (!mounted) return;
-    setState(() => _busy = false);
-    if (success) {
-      final token = await SessionStorage().readToken();
-      if (!mounted) return;
-      final isAdmin = _hasAdminRole(token ?? '');
-      Widget destination = isAdmin ? const AdminDashboardScreen() : const DashboardScreen();
-      if (!isAdmin) {
-        try {
-          final pinStatus = await ApiClient().get('/users/me/transaction-pin') as Map<String, dynamic>;
-          if (pinStatus['configured'] != true) {
-            destination = TransactionPinSetupScreen(
-              apiClient: ApiClient(),
-              nextScreen: const DashboardScreen(),
-            );
-          }
-        } catch (_) {
-          setState(() => _error = 'No se pudo verificar la configuración del PIN. Cierra sesión e ingresa nuevamente.');
-          return;
+    if (!success) {
+      setState(() {
+        _busy = false;
+        _error = 'No fue posible validar la biometría. Inténtalo de nuevo.';
+      });
+      return;
+    }
+
+    try {
+      // Confirmación desde backend: ADMIN de tenant no es administrador global.
+      final status = await ApiClient().get('/users/me/platform-admin") as Map<String, dynamic>;
+      final isPlatformAdmin = status['is_platform_admin'] == true;
+      Widget destination = isPlatformAdmin ? const AdminDashboardScreen() : const DashboardScreen();
+
+      // Usuarios de tenant (incluidos admins bancarios) deben tener PIN transaccional.
+      if (!isPlatformAdmin) {
+        final pinStatus = await ApiClient().get('/users/me/transaction-pin') as Map<String, dynamic>;
+        if (pinStatus['configured'] != true) {
+          destination = TransactionPinSetupScreen(
+            apiClient: ApiClient(),
+            nextScreen: const DashboardScreen(),
+          );
         }
       }
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => destination),
-      );
-    } else {
-      setState(() => _error = 'No fue posible validar la biometría. Inténtalo de nuevo.');
+      if (!mounted) return;
+      setState(() => _busy = false);
+      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => destination));
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = 'No se pudo verificar la sesión. Cierra sesión e ingresa nuevamente.';
+      });
     }
   }
 
