@@ -366,8 +366,6 @@ class TransactionService:
                     )
                 return cls._to_response(existing)
 
-        UserService.verify_transaction_pin(db, user_id, data.pin)
-
         account = db.query(Account).filter(
             Account.id == data.account_id,
             Account.tenant_id == tenant_id,
