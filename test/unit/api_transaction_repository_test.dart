@@ -155,9 +155,6 @@ void main() {
         ),
       );
     });
-  });
-}
-
 
     test('deposit and withdrawal send idempotency keys and transaction payloads', () async {
       final requests = <http.Request>[];
@@ -222,3 +219,5 @@ void main() {
         ),
       );
     });
+  });
+}
