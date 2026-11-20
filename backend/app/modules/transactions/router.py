@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Header, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_db, get_current_user
+from app.core.config import settings
 from app.modules.transactions.schemas import (
     TransferRequest,
     DepositRequest,
@@ -83,6 +84,13 @@ def create_deposit(
     idempotency_key: str = Header(..., alias="Idempotency-Key", min_length=8, max_length=100),
     x_correlation_id: Optional[str] = Header(None, alias="X-Correlation-ID"),
 ):
+    if not settings.SIMULATED_DEPOSITS_ENABLED:
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Los depósitos simulados están deshabilitados. Configure un proveedor de pagos para recibir fondos.",
+        )
+
     correlation_id = x_correlation_id or f"corr-{uuid.uuid4()}"
     key = idempotency_key.strip()
     if not key:
