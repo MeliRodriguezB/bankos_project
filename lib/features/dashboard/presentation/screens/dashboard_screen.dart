@@ -271,7 +271,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
               );
-              if (success == true) _fetchDashboard();
+              if (success == true) {
+                _fetchDashboard();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Depósito acreditado exitosamente.'),
+                    backgroundColor: AppTheme.success,
+                  ),
+                );
+              }
             },
             onWithdraw: () async {
               final activeAccounts = data.accounts.where((a) => a.isActive).toList();
@@ -290,7 +298,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
               );
-              if (success == true) _fetchDashboard();
+              if (success == true) {
+                _fetchDashboard();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Retiro completado exitosamente.'),
+                    backgroundColor: AppTheme.success,
+                  ),
+                );
+              }
             },
             onHistory: () {
               Navigator.push(
