@@ -243,7 +243,7 @@ class AccountService:
                 status=tx_status,
                 currency=currency,
                 count=count,
-                total_amount=f"{(total or Decimal('0.00")):.2f}",
+                total_amount=f"{(total or Decimal('0.00')):.2f}",
             )
             for tx_status, currency, count, total in transaction_rows
         ]
