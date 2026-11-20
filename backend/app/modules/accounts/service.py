@@ -57,6 +57,15 @@ class AccountService:
     ) -> Account:
         """Crea cuenta solo para un titular con membresía activa en el mismo tenant."""
         target_user_id = data.user_id or user_id
+        tenant = db.query(Tenant).filter(Tenant.id == UUID(tenant_id)).first()
+        if tenant is None:
+            raise HTTPException(status_code=404, detail="Institución no encontrada.")
+        if data.currency.upper() not in (tenant.supported_currencies or []):
+            raise HTTPException(
+                status_code=422,
+                detail="La moneda solicitada no está habilitada para esta institución.",
+            )
+
         membership = db.query(TenantMembership).filter(
             TenantMembership.tenant_id == UUID(tenant_id),
             TenantMembership.user_id == UUID(target_user_id),
