@@ -44,6 +44,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String? _correlationId;
   bool _isBalanceHidden = false;
 
+  // Paleta local por tenant mientras el endpoint de branding se integra.
+  Color get _bankColor {
+    final tenant = (_dashboardData?.tenantName ?? '').toLowerCase();
+    if (tenant.contains('bancolombia')) return const Color(0xFF007A4B);
+    if (tenant.contains('popular')) return const Color(0xFFB5121B);
+    if (tenant.contains('nequi')) return const Color(0xFFDA0081);
+    if (tenant.contains('nu')) return const Color(0xFF820AD1);
+    return AppTheme.accent;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -131,7 +141,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: AppTheme.primary,
+                color: _bankColor,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Text(
@@ -211,12 +221,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       color: AppTheme.accent,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.symmetric(horizontal: MediaQuery.of(context).size.width < 380 ? 12 : 20, vertical: 16),
         children: [
           // 1. Cabecera con resumen financiero por divisa y tenant
           BalanceHeaderCard(
             userName: data.userName,
             tenantName: data.tenantName,
+            bankColor: _bankColor,
             balances: data.balancesByCurrency,
             isBalanceHidden: _isBalanceHidden,
             onToggleVisibility: () {
@@ -333,6 +344,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: AccountCard(
                   account: acc,
+                  bankColor: _bankColor,
                   isBalanceHidden: _isBalanceHidden,
                   onTap: () => _openAccountDetail(acc),
                 ),
