@@ -157,3 +157,68 @@ void main() {
     });
   });
 }
+
+
+    test('deposit and withdrawal send idempotency keys and transaction payloads', () async {
+      final requests = <http.Request>[];
+      final client = MockClient((request) async {
+        requests.add(request);
+        return http.Response(
+          jsonEncode({
+            'id': 'tx-${requests.length}',
+            'type': requests.length == 1 ? 'DEPOSIT' : 'WITHDRAWAL',
+            'amount': '2500.00',
+            'currency': 'COP',
+            'fee_amount': '0.00',
+            'exchange_rate': '1.000000',
+            'converted_amount': '2500.00',
+            'destination_currency': 'COP',
+            'status': 'COMPLETED',
+            'idempotency_key': request.headers['idempotency-key'],
+            'correlation_id': 'corr-transaction-${requests.length}',
+            'created_at': '2026-11-20T08:00:00Z',
+          }),
+          201,
+          headers: {'content-type': 'application/json'},
+        );
+      });
+      final repository = ApiTransactionRepository(
+        apiClient: ApiClient(
+          baseUrl: 'https://bankos.test/api/v1',
+          client: client,
+        ),
+      );
+
+      await repository.deposit(
+        accountId: 'account-001',
+        amount: '2500.00',
+        currency: 'COP',
+        description: 'Test deposit',
+        idempotencyKey: 'deposit-api-test-001',
+      );
+      await repository.withdraw(
+        accountId: 'account-001',
+        amount: '2500.00',
+        currency: 'COP',
+        pin: '1234',
+        description: 'Test withdrawal',
+        idempotencyKey: 'withdraw-api-test-001',
+      );
+
+      expect(requests, hasLength(2));
+      expect(requests[0].url.path, '/api/v1/transactions/deposits');
+      expect(requests[0].headers['idempotency-key'], 'deposit-api-test-001');
+      expect(
+        jsonDecode(requests[0].body),
+        containsPair('account_id', 'account-001'),
+      );
+      expect(requests[1].url.path, '/api/v1/transactions/withdrawals');
+      expect(requests[1].headers['idempotency-key'], 'withdraw-api-test-001');
+      expect(
+        jsonDecode(requests[1].body),
+        allOf(
+          containsPair('account_id', 'account-001'),
+          containsPair('pin', '1234'),
+        ),
+      );
+    });
