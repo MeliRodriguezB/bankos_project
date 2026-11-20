@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from uuid import uuid4
 
@@ -333,3 +334,43 @@ def test_withdrawal_rejects_invalid_pin(financial_db):
         )
 
     assert exc.value.status_code == 401
+
+
+
+def test_idempotency_key_remains_valid_after_more_than_24_hours(financial_db):
+    db, tenant, user, source, destination = financial_db
+    request = _transfer(source.id)
+
+    first = TransactionService.process_transfer(
+        db,
+        str(tenant.id),
+        str(user.id),
+        request,
+        "retry-after-24-hours-001",
+        "corr-original",
+    )
+
+    # Simulate a retry arriving 25 hours after the original persisted operation.
+    old_timestamp = datetime.now(timezone.utc) - timedelta(hours=25)
+    db.execute(
+        Transaction.__table__.update()
+        .where(Transaction.id == first.id)
+        .values(created_at=old_timestamp)
+    )
+    db.commit()
+
+    second = TransactionService.process_transfer(
+        db,
+        str(tenant.id),
+        str(user.id),
+        request,
+        "retry-after-24-hours-001",
+        "corr-retry",
+    )
+
+    db.refresh(source)
+    db.refresh(destination)
+    assert second.id == first.id
+    assert second.created_at.replace(tzinfo=timezone.utc) <= old_timestamp
+    assert source.balance == Decimal("97500.00")
+    assert destination.balance == Decimal("1000.00")
