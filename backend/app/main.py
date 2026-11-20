@@ -28,6 +28,26 @@ from app.core.rate_limit import RateLimitMiddleware
 from app.core.error_handlers import register_exception_handlers
 
 
+def seed_demo_accounts(db, accounts_to_seed: list[dict]) -> None:
+    """Insert demo accounts without overwriting balances or account state."""
+    for acc_data in accounts_to_seed:
+        existing = db.query(Account).filter(Account.id == acc_data["id"]).first()
+        if existing is None:
+            db.add(Account(**acc_data))
+            continue
+
+        # Seed data is insert-only: restarting the API must never reset a
+        # customer's balance or reactivate an account changed during a demo.
+        identity_fields = ("tenant_id", "user_id", "account_number", "currency")
+        if any(
+            getattr(existing, field) != acc_data[field]
+            for field in identity_fields
+        ):
+            raise RuntimeError(
+                f"La cuenta demo {acc_data['id']} ya existe con otra identidad."
+            )
+
+
 def seed_database():
     """
     Inicializa de forma 100% idempotente los datos de demostración para el reto BankOS:
@@ -248,22 +268,7 @@ def seed_database():
             },
         ]
 
-        for acc_data in accounts_to_seed:
-            existing = db.query(Account).filter(Account.id == acc_data["id"]).first()
-            if existing is None:
-                db.add(Account(**acc_data))
-                continue
-
-            # Seed data is insert-only: restarting the API must never reset a
-            # customer's balance or reactivate an account changed during a demo.
-            identity_fields = ("tenant_id", "user_id", "account_number", "currency")
-            if any(
-                getattr(existing, field) != acc_data[field]
-                for field in identity_fields
-            ):
-                raise RuntimeError(
-                    f"La cuenta demo {acc_data['id']} ya existe con otra identidad."
-                )
+        seed_demo_accounts(db, accounts_to_seed)
 
         # 6. Seed independent history for each institution only when that
         # tenant has no movements yet. Never overwrite balances on restart.
