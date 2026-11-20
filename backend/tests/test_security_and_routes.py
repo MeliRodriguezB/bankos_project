@@ -216,3 +216,26 @@ def test_correlation_id_is_returned_for_success_and_standardized_errors():
         assert missing.headers["X-Correlation-ID"] == "bankos-test-002"
         assert missing.json()["error"]["code"] == "HTTP_404"
         assert missing.json()["error"]["correlation_id"] == "bankos-test-002"
+
+
+def test_tenant_config_response_serializes_uuid_as_json_string():
+    from uuid import uuid4
+    from decimal import Decimal
+    from app.modules.tenants.schemas import TenantConfigResponse
+
+    tenant_id = uuid4()
+    response = TenantConfigResponse(
+        id=tenant_id,
+        name="Test Institution",
+        slug="test-institution",
+        status="ACTIVE",
+        max_transfer_amount=Decimal("1000000.00"),
+        transfer_fees={"COP": "1000.00"},
+        transfer_fee_percent=Decimal("0.0050"),
+        primary_currency="COP",
+        supported_currencies=["COP"],
+        exchange_rates={},
+        webhook_url=None,
+    )
+
+    assert response.model_dump(mode="json")["id"] == str(tenant_id)

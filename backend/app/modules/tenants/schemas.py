@@ -1,5 +1,6 @@
 from decimal import Decimal
 from typing import Any
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
 
@@ -67,7 +68,7 @@ class TenantConfigUpdate(BaseModel):
 
 
 class TenantConfigResponse(BaseModel):
-    id: str
+    id: UUID
     name: str
     slug: str
     status: str
