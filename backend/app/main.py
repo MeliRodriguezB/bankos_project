@@ -250,52 +250,82 @@ def seed_database():
 
         for acc_data in accounts_to_seed:
             existing = db.query(Account).filter(Account.id == acc_data["id"]).first()
-            if existing:
-                existing.tenant_id = acc_data["tenant_id"]
-                existing.user_id = acc_data["user_id"]
-                existing.balance = acc_data["balance"]
-                existing.status = acc_data["status"]
-                existing.currency = acc_data["currency"]
-            else:
+            if existing is None:
                 db.add(Account(**acc_data))
+                continue
 
-        # 6. Historial inicial
-        tx_count = db.query(Transaction).filter(Transaction.user_id == str(user1.id)).count()
-        if tx_count == 0:
-            tx1 = Transaction(
-                tenant_id=str(tenant1.id),
-                user_id=str(user1.id),
-                destination_account_id="acc-901",
-                type="DEPOSIT",
-                amount=Decimal("2500000.00"),
-                currency="COP",
-                converted_amount=Decimal("2500000.00"),
-                destination_currency="COP",
-                exchange_rate=Decimal("1.000000"),
-                fee_amount=Decimal("0.00"),
-                status="COMPLETED",
-                description="Apertura y depósito inicial",
-            )
-            tx2 = Transaction(
-                tenant_id=str(tenant1.id),
-                user_id=str(user1.id),
-                source_account_id="acc-901",
-                type="WITHDRAWAL",
-                amount=Decimal("50000.00"),
-                currency="COP",
-                converted_amount=Decimal("50000.00"),
-                destination_currency="COP",
-                exchange_rate=Decimal("1.000000"),
-                fee_amount=Decimal("0.00"),
-                status="COMPLETED",
-                description="Retiro en cajero automático",
-            )
-            db.add_all([tx1, tx2])
+            # Seed data is insert-only: restarting the API must never reset a
+            # customer's balance or reactivate an account changed during a demo.
+            identity_fields = ("tenant_id", "user_id", "account_number", "currency")
+            if any(
+                getattr(existing, field) != acc_data[field]
+                for field in identity_fields
+            ):
+                raise RuntimeError(
+                    f"La cuenta demo {acc_data['id']} ya existe con otra identidad."
+                )
+
+        # 6. Seed independent history for each institution only when that
+        # tenant has no movements yet. Never overwrite balances on restart.
+        history_seeds = (
+            (
+                tenant1,
+                "acc-901",
+                Decimal("2500000.00"),
+                Decimal("50000.00"),
+                "Apertura y depósito inicial",
+                "Retiro en cajero automático",
+            ),
+            (
+                tenant2,
+                "acc-tenant2-01",
+                Decimal("100000000.00"),
+                Decimal("1.00"),
+                "Apertura y depósito inicial",
+                "Retiro de prueba",
+            ),
+        )
+        for tenant, account_id, deposit_amount, withdrawal_amount, deposit_note, withdrawal_note in history_seeds:
+            tx_count = db.query(Transaction).filter(
+                Transaction.tenant_id == str(tenant.id),
+                Transaction.user_id == str(user1.id),
+            ).count()
+            if tx_count == 0:
+                db.add_all([
+                    Transaction(
+                        tenant_id=str(tenant.id),
+                        user_id=str(user1.id),
+                        destination_account_id=account_id,
+                        type="DEPOSIT",
+                        amount=deposit_amount,
+                        currency="COP",
+                        converted_amount=deposit_amount,
+                        destination_currency="COP",
+                        exchange_rate=Decimal("1.000000"),
+                        fee_amount=Decimal("0.00"),
+                        status="COMPLETED",
+                        description=deposit_note,
+                    ),
+                    Transaction(
+                        tenant_id=str(tenant.id),
+                        user_id=str(user1.id),
+                        source_account_id=account_id,
+                        type="WITHDRAWAL",
+                        amount=withdrawal_amount,
+                        currency="COP",
+                        converted_amount=withdrawal_amount,
+                        destination_currency="COP",
+                        exchange_rate=Decimal("1.000000"),
+                        fee_amount=Decimal("0.00"),
+                        status="COMPLETED",
+                        description=withdrawal_note,
+                    ),
+                ])
 
         db.commit()
     except Exception as e:
         db.rollback()
-        print(f"Error seeding database: {e}")
+        raise RuntimeError(f"Error seeding database: {e}") from e
     finally:
         db.close()
 
