@@ -6,6 +6,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Index,
+    Integer,
     String,
     Text,
     Uuid,
@@ -38,6 +39,13 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255), nullable=False)
     password_hash: Mapped[str] = mapped_column(Text, nullable=False)
     full_name: Mapped[str] = mapped_column(String(150), nullable=False)
+    transaction_pin_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
+    transaction_pin_failed_attempts: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default=text("0")
+    )
+    transaction_pin_locked_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("TRUE")
     )
