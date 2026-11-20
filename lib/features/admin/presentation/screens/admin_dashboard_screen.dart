@@ -102,7 +102,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text('${account.currency} ${_amount(account.balance)', style: const TextStyle(fontWeight: FontWeight.w600)),
+            Text('${account.currency} ${_amount(account.balance)}', style: const TextStyle(fontWeight: FontWeight.w600)),
             Text(account.status, style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
           ],
         ),
