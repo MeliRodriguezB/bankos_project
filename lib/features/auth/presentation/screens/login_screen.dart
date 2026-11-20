@@ -31,7 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   late AuthRepository _repository;
   late ApiClient _apiClient;
-  bool _useMock = false;
+  bool _useMock = const bool.fromEnvironment('BANKOS_DEMO_MODE');
   bool _isLoading = false;
   bool _obscurePassword = true;
   String? _errorMessage;
@@ -39,8 +39,10 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
+    _useMock = const bool.fromEnvironment('BANKOS_DEMO_MODE');
     _apiClient = widget.apiClient ?? ApiClient();
-    _repository = widget.repository ?? ApiAuthRepository(apiClient: _apiClient);
+    _repository = widget.repository ??
+        (_useMock ? MockAuthRepository() : ApiAuthRepository(apiClient: _apiClient));
   }
 
   @override
