@@ -92,8 +92,14 @@ bankos_project/
 Desde la raíz del proyecto en una terminal (PowerShell o Bash):
 
 ```bash
+# Crear la configuración local (opcional, pero recomendado)
+cp .env.example .env
+
+# Iniciar API, PostgreSQL y Redis
 docker compose up --build -d
 ```
+
+En Windows PowerShell, utiliza `Copy-Item .env.example .env`. Para habilitar el panel administrativo de demostración, define `BOOTSTRAP_ADMIN_EMAIL` y `BOOTSTRAP_ADMIN_PASSWORD` en el archivo `.env` antes de iniciar el stack. No reutilices estas credenciales fuera del entorno local.
 
 Verifica que los tres contenedores estén saludables:
 
