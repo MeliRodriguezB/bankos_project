@@ -11,7 +11,7 @@ from app.db.base import Base
 from app.modules.accounts.models import Account
 from app.modules.tenants.models import Tenant
 from app.modules.transactions.models import Transaction
-from app.modules.transactions.schemas import TransferRequest
+from app.modules.transactions.schemas import DepositRequest, TransferRequest, WithdrawRequest
 from app.modules.transactions.service import TransactionService
 from app.modules.users.models import User
 
@@ -269,3 +269,69 @@ def test_multicurrency_transfer_uses_tenant_rate_and_fee(financial_db):
     assert result.fee_amount == "1.00"
     assert usd_source.balance == Decimal("89.00")
     assert destination.balance == Decimal("40000.00")
+
+
+
+def test_deposit_is_idempotent(financial_db):
+    db, tenant, user, source, _ = financial_db
+    request = DepositRequest(
+        account_id=source.id,
+        amount=Decimal("2500.00"),
+        currency="COP",
+        description="Test deposit",
+    )
+
+    first = TransactionService.process_deposit(
+        db, str(tenant.id), str(user.id), request,
+        "deposit-idempotency-001", "corr-deposit-first"
+    )
+    second = TransactionService.process_deposit(
+        db, str(tenant.id), str(user.id), request,
+        "deposit-idempotency-001", "corr-deposit-retry"
+    )
+
+    db.refresh(source)
+    assert first.id == second.id
+    assert source.balance == Decimal("102500.00")
+
+
+def test_withdrawal_is_idempotent_and_checks_pin(financial_db):
+    db, tenant, user, source, _ = financial_db
+    request = WithdrawRequest(
+        account_id=source.id,
+        amount=Decimal("2500.00"),
+        currency="COP",
+        pin="1234",
+        description="Test withdrawal",
+    )
+
+    first = TransactionService.process_withdrawal(
+        db, str(tenant.id), str(user.id), request,
+        "withdraw-idempotency-001", "corr-withdraw-first"
+    )
+    second = TransactionService.process_withdrawal(
+        db, str(tenant.id), str(user.id), request,
+        "withdraw-idempotency-001", "corr-withdraw-retry"
+    )
+
+    db.refresh(source)
+    assert first.id == second.id
+    assert source.balance == Decimal("97500.00")
+
+
+def test_withdrawal_rejects_invalid_pin(financial_db):
+    db, tenant, user, source, _ = financial_db
+    request = WithdrawRequest(
+        account_id=source.id,
+        amount=Decimal("100.00"),
+        currency="COP",
+        pin="9999",
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        TransactionService.process_withdrawal(
+            db, str(tenant.id), str(user.id), request,
+            "withdraw-invalid-pin-001", "corr-invalid-pin"
+        )
+
+    assert exc.value.status_code == 401
