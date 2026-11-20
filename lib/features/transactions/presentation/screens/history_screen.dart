@@ -19,6 +19,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
   List<TransactionModel> _transactions = [];
   bool _isLoading = true;
   String? _errorMessage;
+  int _currentPage = 1;
+  bool _hasMore = true;
+  bool _isLoadingMore = false;
+  static const int _pageSize = 20;
 
   @override
   void initState() {
@@ -30,13 +34,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _currentPage = 1;
+      _hasMore = true;
     });
 
     try {
-      final list = await widget.repository.getHistory(type: _selectedFilter);
+      final list = await widget.repository.getHistory(type: _selectedFilter, page: 1, pageSize: _pageSize);
       if (mounted) {
         setState(() {
           _transactions = list;
+          _hasMore = list.length == _pageSize;
           _isLoading = false;
         });
       }
@@ -47,6 +54,32 @@ class _HistoryScreenState extends State<HistoryScreen> {
           _errorMessage = e.toString();
         });
       }
+    }
+  }
+
+  Future<void> _loadMore() async {
+    if (_isLoadingMore || !_hasMore || _isLoading) return;
+    setState(() => _isLoadingMore = true);
+    try {
+      final nextPage = _currentPage + 1;
+      final list = await widget.repository.getHistory(
+        type: _selectedFilter,
+        page: nextPage,
+        pageSize: _pageSize,
+      );
+      if (!mounted) return;
+      setState(() {
+        _transactions.addAll(list);
+        _currentPage = nextPage;
+        _hasMore = list.length == _pageSize;
+        _isLoadingMore = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoadingMore = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo cargar más historial: $e')),
+      );
     }
   }
 
@@ -146,9 +179,23 @@ class _HistoryScreenState extends State<HistoryScreen> {
       onRefresh: _fetchHistory,
       child: ListView.separated(
         padding: const EdgeInsets.all(16),
-        itemCount: _transactions.length,
+        itemCount: _transactions.length + (_hasMore ? 1 : 0),
         separatorBuilder: (_, __) => const SizedBox(height: 10),
         itemBuilder: (context, index) {
+          if (index == _transactions.length) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Center(
+                child: _isLoadingMore
+                    ? const CircularProgressIndicator()
+                    : OutlinedButton.icon(
+                        onPressed: _loadMore,
+                        icon: const Icon(Icons.expand_more),
+                        label: const Text('Cargar más movimientos'),
+                      ),
+              ),
+            );
+          }
           final tx = _transactions[index];
           final dateStr = dateFormat.format(tx.createdAt.toLocal());
 
