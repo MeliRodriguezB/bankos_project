@@ -7,6 +7,7 @@ import '../../../transactions/data/repositories/transaction_repository.dart';
 import '../../../transactions/presentation/screens/deposit_screen.dart';
 import '../../../transactions/presentation/screens/history_screen.dart';
 import '../../../transactions/presentation/screens/transfer_screen.dart';
+import '../../../transactions/presentation/screens/withdrawal_screen.dart';
 import '../../data/models/account_model.dart';
 import '../../data/models/dashboard_model.dart';
 import '../../data/repositories/dashboard_repository.dart';
@@ -259,12 +260,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
               if (success == true) _fetchDashboard();
             },
             onWithdraw: () async {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Usa los cajeros automáticos o la pantalla de transferencia para mover fondos.'),
-                  behavior: SnackBarBehavior.floating,
+              final activeAccounts = data.accounts.where((a) => a.isActive).toList();
+              if (activeAccounts.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('No tienes cuentas activas para retirar.')),
+                );
+                return;
+              }
+              final success = await Navigator.push<bool>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => WithdrawalScreen(
+                    availableAccounts: activeAccounts,
+                    repository: _txRepository,
+                  ),
                 ),
               );
+              if (success == true) _fetchDashboard();
             },
             onHistory: () {
               Navigator.push(
