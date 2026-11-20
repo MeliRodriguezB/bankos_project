@@ -143,11 +143,13 @@ El seed local configura el PIN `1234` para probar retiros y transferencias sin p
 
 Para probar el segundo tenant, usa la institución **Neobanco Ágil**. El seed crea la membresía de demostración para la misma identidad de prueba, con las cuentas aisladas bajo el tenant seleccionado. Las cuentas de una institución no se pueden consultar ni transferir desde la otra.
 
-La segunda institución contiene una cuenta de prueba aislada, pero no se crea automáticamente un usuario final para ella. No utilizar los datos de seed como cuentas reales.
+La misma identidad de demostración tiene una membresía independiente en ambos tenants para validar el aislamiento: al iniciar sesión con `cooperativa-futuro` o `neobanco-agil`, la API devuelve cuentas y movimientos del tenant seleccionado. No utilizar los datos de seed como cuentas reales.
 
 ---
 
 ## 🧪 Ejecución de Pruebas Automatizadas
+
+La suite de backend cubre autenticación, contratos, políticas por tenant, límites, aislamiento, atomicidad, reintentos idempotentes y registros de auditoría inmutables.
 
 ### Pruebas del Cliente (Flutter)
 Para ejecutar la suite de 18 pruebas unitarias y de widgets (formateo de moneda, cálculo de cotización, enmascaramiento de cuentas, renderizado de tarjetas y flujos de login):
@@ -189,4 +191,5 @@ flutter build apk --release --dart-define=API_BASE_URL=https://tu-dominio.exampl
 ## 📖 Documentación Adicional
 
 - [Guía de despliegue de la demostración web](docs/deployment-demo.md)
+- [Configuración por institución (Tenant)](docs/tenant-configuration.md)
 - [Contrato de API REST v1.0.0](docs/api-contract.md)
