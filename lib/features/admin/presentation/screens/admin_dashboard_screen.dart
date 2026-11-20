@@ -53,7 +53,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  int _color(String hex) => int.parse('FF${hex.replaceFirst('#", "")}', radix: 16);
+  int _color(String hex) => int.parse('FF${hex.replaceFirst('#', '')}', radix: 16);
 
   Widget _metric(String label, String value, IconData icon) {
     return Container(
