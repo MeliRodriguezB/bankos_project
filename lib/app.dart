@@ -65,10 +65,20 @@ class _SessionGateState extends State<SessionGate> {
     }
 
     ApiClient.setGlobalAuthToken(token);
-    final isAdmin = _hasAdminRole(token);
+    // El privilegio global se confirma contra backend; un rol ADMIN de tenant
+    // no debe abrir el panel de administración de toda la plataforma.
+    bool isPlatformAdmin;
+    try {
+      final status = await ApiClient().get('/users/me/platform-admin') as Map<String, dynamic>;
+      isPlatformAdmin = status['is_platform_admin'] == true;
+    } catch (_) {
+      await storage.clearToken();
+      ApiClient.setGlobalAuthToken(null);
+      return const LoginScreen();
+    }
 
-    // Los administradores no usan el PIN transaccional de clientes.
-    if (!isAdmin) {
+    // Solo los Platform Admin exentos de PIN; administradores de banco son usuarios tenant.
+    if (!isPlatformAdmin) {
       try {
         final pinStatus = await ApiClient().get('/users/me/transaction-pin') as Map<String, dynamic>;
         if (pinStatus['configured'] != true) {
@@ -78,7 +88,6 @@ class _SessionGateState extends State<SessionGate> {
           );
         }
       } catch (_) {
-        // Si no se puede verificar el estado de PIN, no se asume que está configurado.
         await storage.clearToken();
         ApiClient.setGlobalAuthToken(null);
         return const LoginScreen();
@@ -88,19 +97,7 @@ class _SessionGateState extends State<SessionGate> {
     if (await storage.isBiometricEnabled()) {
       return const BiometricLockScreen();
     }
-    return isAdmin ? const AdminDashboardScreen() : const DashboardScreen();
-  }
-
-  bool _hasAdminRole(String token) {
-    try {
-      final parts = token.split('.');
-      if (parts.length != 3) return false;
-      final payload = jsonDecode(utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))) ) as Map<String, dynamic>;
-      final roles = payload['roles'] as List<dynamic>? ?? [];
-      return roles.map((role) => role.toString().toUpperCase()).contains('ADMIN');
-    } catch (_) {
-      return false;
-    }
+    return isPlatformAdmin ? const AdminDashboardScreen() : const DashboardScreen();
   }
 
   bool _isTokenNotExpired(String token) {
