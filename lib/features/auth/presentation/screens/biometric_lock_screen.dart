@@ -35,7 +35,7 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
 
     try {
       // Confirmación desde backend: ADMIN de tenant no es administrador global.
-      final status = await ApiClient().get('/users/me/platform-admin") as Map<String, dynamic>;
+      final status = await ApiClient().get('/users/me/platform-admin') as Map<String, dynamic>;
       final isPlatformAdmin = status['is_platform_admin'] == true;
       Widget destination = isPlatformAdmin ? const AdminDashboardScreen() : const DashboardScreen();
 
