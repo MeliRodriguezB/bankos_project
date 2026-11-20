@@ -6,7 +6,9 @@ El cliente móvil y web está construido con **Flutter**, y el backend de alta c
 
 ---
 
-## 🚀 Estado del Proyecto: Implementado y Validado (v1.0.0)
+## 🚧 Estado del Proyecto: Prototipo funcional en validación
+
+BankOS está preparado como prototipo demostrativo. No debe utilizarse para custodiar dinero real ni conectarse a cuentas bancarias reales. La validación automatizada y la preparación del despliegue continúan en la rama `fix/withdrawal-screen-ci`.
 
 El proyecto cuenta con la integración de las 3 Personas de desarrollo:
 1. **Persona 1 (Autenticación e Inquilinos):**
@@ -125,26 +127,19 @@ flutter run -d chrome
 
 ---
 
-## 🔐 Credenciales de Prueba Pre-cargadas (Seed Data)
+## 🔐 Datos de demostración (solo desarrollo)
 
-La base de datos se inicializa automáticamente al arrancar con datos de prueba listos para usar:
+Al iniciar el backend con `ENVIRONMENT=development`, el proceso de seed crea un usuario y cuentas de prueba para la institución `cooperativa-futuro`:
 
-### Institución 1: Cooperativa Futuro
-- **Institución:** `Cooperativa Futuro` (slug: `cooperativa-futuro`)
-- **Correo Electrónico:** `carlos@fintech.com`
-- **Contraseña:** `123456`
-- **PIN de Transferencias (2FA):** `1234`
-- **Cuentas disponibles:**
-  - `CU-1002003001` (Cuenta Corriente Principal - COP)
-  - `AH-2003004002` (Fondo de Emergencia - COP)
-  - `US-3004005003` (Ahorros Dólares - USD)
+- **Institución:** Cooperativa Financiera Futuro (`cooperativa-futuro`)
+- **Correo:** `carlos@fintech.com`
+- **Contraseña de demostración:** `123456`
+- **Cuentas COP:** `1002348911` y `1002348922`
+- **Cuenta USD:** `2005541100`
 
-### Institución 2: Neobanco Ágil (Aislamiento Multi-Tenant)
-- **Institución:** `Neobanco Ágil` (slug: `neobanco-agil`)
-- **Correo Electrónico:** `ana@neobanco.com`
-- **Contraseña:** `123456`
-- **PIN de Transferencias (2FA):** `1234`
-- *(Permite verificar que ningún usuario de una entidad puede ver cuentas ni saldos de otra).*
+El PIN transaccional no se precarga: debe configurarse desde el flujo de seguridad de la aplicación. Los datos y credenciales anteriores son exclusivamente locales/de demostración; no deben habilitarse en un entorno público.
+
+La segunda institución contiene una cuenta de prueba aislada, pero no se crea automáticamente un usuario final para ella. No utilizar los datos de seed como cuentas reales.
 
 ---
 
@@ -156,9 +151,23 @@ Para ejecutar la suite de 18 pruebas unitarias y de widgets (formateo de moneda,
 ```bash
 flutter test
 ```
-*Resultado: 18 pruebas pasando (100% de éxito).*
+El resultado vigente debe consultarse en la ejecución de GitHub Actions correspondiente al último commit; no se asume que un resultado histórico siga siendo válido.
 
 ---
+
+## ⚠️ Límites del prototipo y despliegue
+
+- Los depósitos son simulados y solo están habilitados fuera de producción. En producción, la configuración falla si `SIMULATED_DEPOSITS_ENABLED=true`; deben integrarse primero con un proveedor de pagos o un proceso de conciliación.
+- Las tasas de cambio configuradas son de demostración. Las conversiones entre monedas se rechazan en producción hasta integrar un proveedor de tasas fiable.
+- El backend de esta rama usa `create_all` al iniciar y la migración existente no constituye todavía una migración inicial completa. Antes de producción debe completarse el esquema de Alembic y ejecutar migraciones controladas.
+- La infraestructura Docker Compose incluida utiliza credenciales locales de desarrollo. No exponer PostgreSQL ni Redis públicamente ni reutilizar esas contraseñas en un servidor.
+- El despliegue público requiere HTTPS, secretos fuertes, CORS restringido, almacenamiento seguro de secretos, copias de seguridad y monitorización.
+
+Para compilar Flutter contra una API desplegada, define la URL durante la compilación:
+
+```bash
+flutter build apk --release --dart-define=API_BASE_URL=https://tu-dominio.example/api/v1
+```
 
 ## 🛡️ Principios Arquitectónicos y de Seguridad
 
