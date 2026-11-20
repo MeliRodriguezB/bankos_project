@@ -45,7 +45,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _isBalanceHidden = false;
   String? _brandingPrimary;
 
-  // Paleta local por tenant mientras el endpoint de branding se integra.
+  // Branding por tenant desde backend; fallback local si el endpoint no está disponible.
   Color get _bankColor {
     final configured = _brandingPrimary;
     if (configured != null && configured.startsWith('#') && configured.length == 7) {
