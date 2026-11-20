@@ -60,34 +60,41 @@ def seed_database():
             db.add(tenant2)
             db.flush()
 
-        # 2. Roles
-        role_customer = db.query(Role).filter(
-            Role.tenant_id == tenant1.id,
-            Role.code == "CUSTOMER"
-        ).first()
-        if not role_customer:
-            role_customer = Role(
-                tenant_id=tenant1.id,
-                code="CUSTOMER",
-                name="Cliente Bancario",
-                is_system=True
-            )
-            db.add(role_customer)
-            db.flush()
+        # 2. Cada institución mantiene sus propios roles CUSTOMER y ADMIN.
+        roles_by_tenant = {}
+        for tenant in (tenant1, tenant2):
+            role_customer = db.query(Role).filter(
+                Role.tenant_id == tenant.id,
+                Role.code == "CUSTOMER"
+            ).first()
+            if not role_customer:
+                role_customer = Role(
+                    tenant_id=tenant.id,
+                    code="CUSTOMER",
+                    name="Cliente Bancario",
+                    is_system=True
+                )
+                db.add(role_customer)
+                db.flush()
 
-        role_admin = db.query(Role).filter(
-            Role.tenant_id == tenant1.id,
-            Role.code == "ADMIN"
-        ).first()
-        if not role_admin:
-            role_admin = Role(
-                tenant_id=tenant1.id,
-                code="ADMIN",
-                name="Administrador institucional",
-                is_system=True
-            )
-            db.add(role_admin)
-            db.flush()
+            role_admin = db.query(Role).filter(
+                Role.tenant_id == tenant.id,
+                Role.code == "ADMIN"
+            ).first()
+            if not role_admin:
+                role_admin = Role(
+                    tenant_id=tenant.id,
+                    code="ADMIN",
+                    name="Administrador institucional",
+                    is_system=True
+                )
+                db.add(role_admin)
+                db.flush()
+
+            roles_by_tenant[str(tenant.id)] = {
+                "CUSTOMER": role_customer,
+                "ADMIN": role_admin,
+            }
 
         # 3. Usuario Carlos Mendoza
         user1 = db.query(User).filter(User.email == "carlos@fintech.com").first()
@@ -107,41 +114,40 @@ def seed_database():
             user1.transaction_pin_hash = hash_password("1234")
             user1.transaction_pin_failed_attempts = 0
 
-        # 4. Membresía de Carlos en Cooperativa Futuro
-        membership1 = db.query(TenantMembership).filter(
-            TenantMembership.tenant_id == tenant1.id,
-            TenantMembership.user_id == user1.id
-        ).first()
-        if not membership1:
-            membership1 = TenantMembership(
-                tenant_id=tenant1.id,
-                user_id=user1.id,
-                status="ACTIVE"
-            )
-            db.add(membership1)
-            db.flush()
-
-            db.execute(
-                membership_roles.insert().values(
-                    tenant_id=tenant1.id,
-                    membership_id=membership1.id,
-                    role_id=role_customer.id
+        # 4. Carlos tiene una membresía CUSTOMER explícita en ambos tenants.
+        for tenant in (tenant1, tenant2):
+            membership = db.query(TenantMembership).filter(
+                TenantMembership.tenant_id == tenant.id,
+                TenantMembership.user_id == user1.id
+            ).first()
+            if not membership:
+                membership = TenantMembership(
+                    tenant_id=tenant.id,
+                    user_id=user1.id,
+                    status="ACTIVE"
                 )
-            )
+                db.add(membership)
+                db.flush()
+            elif membership.status != "ACTIVE":
+                membership.status = "ACTIVE"
 
-        # Segunda membresía de demostración: el contexto del JWT mantiene aislados ambos tenants.
-        membership2 = db.query(TenantMembership).filter(
-            TenantMembership.tenant_id == tenant2.id,
-            TenantMembership.user_id == user1.id
-        ).first()
-        if not membership2:
-            db.add(TenantMembership(
-                tenant_id=tenant2.id,
-                user_id=user1.id,
-                status="ACTIVE"
-            ))
+            customer_role = roles_by_tenant[str(tenant.id)]["CUSTOMER"]
+            assignment = db.execute(
+                membership_roles.select().where(
+                    membership_roles.c.tenant_id == tenant.id,
+                    membership_roles.c.membership_id == membership.id,
+                    membership_roles.c.role_id == customer_role.id,
+                )
+            ).first()
+            if not assignment:
+                db.execute(membership_roles.insert().values(
+                    tenant_id=tenant.id,
+                    membership_id=membership.id,
+                    role_id=customer_role.id,
+                ))
 
-        # Bootstrap administrativo opcional: nunca se crea una contraseña predeterminada.
+        # Bootstrap opcional: el mismo administrador puede operar en ambos tenants.
+        # Nunca se crea una contraseña administrativa predeterminada.
         if settings.BOOTSTRAP_ADMIN_EMAIL and settings.BOOTSTRAP_ADMIN_PASSWORD:
             admin_email = settings.BOOTSTRAP_ADMIN_EMAIL.strip().lower()
             admin_user = db.query(User).filter(
@@ -157,34 +163,36 @@ def seed_database():
                 db.add(admin_user)
                 db.flush()
 
-            admin_membership = db.query(TenantMembership).filter(
-                TenantMembership.tenant_id == tenant1.id,
-                TenantMembership.user_id == admin_user.id,
-            ).first()
-            if not admin_membership:
-                admin_membership = TenantMembership(
-                    tenant_id=tenant1.id,
-                    user_id=admin_user.id,
-                    status="ACTIVE",
-                )
-                db.add(admin_membership)
-                db.flush()
-            elif admin_membership.status != "ACTIVE":
-                admin_membership.status = "ACTIVE"
+            for tenant in (tenant1, tenant2):
+                admin_membership = db.query(TenantMembership).filter(
+                    TenantMembership.tenant_id == tenant.id,
+                    TenantMembership.user_id == admin_user.id,
+                ).first()
+                if not admin_membership:
+                    admin_membership = TenantMembership(
+                        tenant_id=tenant.id,
+                        user_id=admin_user.id,
+                        status="ACTIVE",
+                    )
+                    db.add(admin_membership)
+                    db.flush()
+                elif admin_membership.status != "ACTIVE":
+                    admin_membership.status = "ACTIVE"
 
-            assignment = db.execute(
-                membership_roles.select().where(
-                    membership_roles.c.tenant_id == tenant1.id,
-                    membership_roles.c.membership_id == admin_membership.id,
-                    membership_roles.c.role_id == role_admin.id,
-                )
-            ).first()
-            if not assignment:
-                db.execute(membership_roles.insert().values(
-                    tenant_id=tenant1.id,
-                    membership_id=admin_membership.id,
-                    role_id=role_admin.id,
-                ))
+                admin_role = roles_by_tenant[str(tenant.id)]["ADMIN"]
+                assignment = db.execute(
+                    membership_roles.select().where(
+                        membership_roles.c.tenant_id == tenant.id,
+                        membership_roles.c.membership_id == admin_membership.id,
+                        membership_roles.c.role_id == admin_role.id,
+                    )
+                ).first()
+                if not assignment:
+                    db.execute(membership_roles.insert().values(
+                        tenant_id=tenant.id,
+                        membership_id=admin_membership.id,
+                        role_id=admin_role.id,
+                    ))
 
         # 5. Cuentas bancarias verificadas por account_number
         accounts_to_seed = [

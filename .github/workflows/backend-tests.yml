@@ -45,6 +45,9 @@ jobs:
         run: PYTHONPATH=. pytest -q
 
       - name: Start the root Docker Compose stack
+        env:
+          BOOTSTRAP_ADMIN_EMAIL: bankos-admin@example.test
+          BOOTSTRAP_ADMIN_PASSWORD: ci-only-admin-password-123456
         run: docker compose -f ../docker-compose.yml up --build -d
 
       - name: Verify API health and OpenAPI v1
@@ -61,7 +64,7 @@ jobs:
           done
           curl --fail --silent http://localhost:8000/openapi.json | python -c "import json, sys; spec=json.load(sys.stdin); assert spec['info']['version'] == '1.0.0'; assert '/api/v1/transactions/transfers' in spec['paths']"
 
-      - name: Verify both demo tenants are isolated
+      - name: Verify both demo tenants, roles and tenant configuration
         run: |
           python - <<'PY'
           import json
@@ -69,31 +72,66 @@ jobs:
 
           base_url = "http://localhost:8000/api/v1"
 
-          def request(path, payload=None, token=None):
+          def request(path, payload=None, token=None, method=None):
               headers = {"Content-Type": "application/json"}
               if token:
                   headers["Authorization"] = f"Bearer {token}"
               body = json.dumps(payload).encode() if payload is not None else None
-              method = "POST" if payload is not None else "GET"
-              req = Request(f"{base_url}{path}", data=body, headers=headers, method=method)
+              request_method = method or ("POST" if payload is not None else "GET")
+              req = Request(
+                  f"{base_url}{path}",
+                  data=body,
+                  headers=headers,
+                  method=request_method,
+              )
               with urlopen(req, timeout=10) as response:
                   return json.loads(response.read())
 
           scenarios = [
-              ("cooperativa-futuro", "1002348911", "8880001234"),
-              ("neobanco-agil", "8880001234", "1002348911"),
+              ("cooperativa-futuro", "1002348911", "8880001234", "1000000.00"),
+              ("neobanco-agil", "8880001234", "1002348911", "2000000.00"),
           ]
-          for tenant_slug, expected_account, foreign_account in scenarios:
-              login = request("/auth/login", {
+          for tenant_slug, expected_account, foreign_account, transfer_limit in scenarios:
+              customer = request("/auth/login", {
                   "tenant_slug": tenant_slug,
                   "email": "carlos@fintech.com",
                   "password": "123456",
               })
-              accounts = request("/accounts", token=login["access_token"])
+              accounts = request("/accounts", token=customer["access_token"])
               account_numbers = {account["account_number"] for account in accounts}
               assert expected_account in account_numbers, tenant_slug
               assert foreign_account not in account_numbers, tenant_slug
-          print("Both tenant logins succeeded and account lists remained isolated.")
+
+              admin = request("/auth/login", {
+                  "tenant_slug": tenant_slug,
+                  "email": "bankos-admin@example.test",
+                  "password": "ci-only-admin-password-123456",
+              })
+              config = {
+                  "max_transfer_amount": transfer_limit,
+                  "transfer_fees": {"COP": "1000.00", "USD": "1.00"},
+                  "transfer_fee_percent": "0.0050",
+                  "primary_currency": "COP",
+                  "supported_currencies": ["COP", "USD"],
+                  "exchange_rates": {
+                      "COP/USD": "0.00025",
+                      "USD/COP": "4000.00",
+                  },
+                  "webhook_url": f"https://hooks.example.test/{tenant_slug}",
+              }
+              updated = request(
+                  "/tenant/config",
+                  payload=config,
+                  token=admin["access_token"],
+                  method="PATCH",
+              )
+              current = request("/tenant/config", token=admin["access_token"])
+              assert float(updated["max_transfer_amount"]) == float(transfer_limit)
+              assert current["transfer_fees"]["COP"] == "1000.00"
+              assert current["supported_currencies"] == ["COP", "USD"]
+              assert current["exchange_rates"]["USD/COP"] == "4000.00"
+              assert current["webhook_url"] == config["webhook_url"]
+          print("Customer/admin roles and independent configuration passed for both tenants.")
           PY
 
       - name: Verify PostgreSQL transaction audit is append-only
