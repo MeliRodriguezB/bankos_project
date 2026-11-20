@@ -13,6 +13,7 @@ from app.modules.accounts.schemas import (
     DashboardTenant,
 )
 from app.modules.tenants.models import TenantMembership
+from app.modules.users.models import User
 
 
 class AccountService:
@@ -155,3 +156,30 @@ class AccountService:
             balances_by_currency=balances_summary,
             accounts=accounts_response,
         )
+
+    @staticmethod
+    def get_accounts_for_tenant_admin(db: Session, tenant_id: str) -> list[dict]:
+        """Lista cuentas y titulares únicamente dentro del tenant del ADMIN autenticado."""
+        rows = (
+            db.query(Account, User.full_name, User.email)
+            .join(User, User.id == Account.user_id)
+            .filter(Account.tenant_id == tenant_id)
+            .order_by(Account.created_at.desc())
+            .all()
+        )
+        return [
+            {
+                "id": account.id,
+                "account_number": account.account_number,
+                "account_number_masked": account.account_number_masked,
+                "alias": account.alias,
+                "balance": f"{account.balance:.2f}",
+                "currency": account.currency,
+                "status": account.status,
+                "created_at": account.created_at,
+                "user_id": account.user_id,
+                "owner_name": owner_name,
+                "owner_email": owner_email,
+            }
+            for account, owner_name, owner_email in rows
+        ]
