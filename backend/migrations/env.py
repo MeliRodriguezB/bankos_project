@@ -11,6 +11,8 @@ from app.db.base import Base
 from app.modules.tenants import models as tenant_models  # noqa: F401
 from app.modules.users import models as user_models  # noqa: F401
 from app.modules.roles import models as role_models  # noqa: F401
+from app.modules.accounts import models as account_models  # noqa: F401
+from app.modules.transactions import models as transaction_models  # noqa: F401
 
 
 config = context.config
