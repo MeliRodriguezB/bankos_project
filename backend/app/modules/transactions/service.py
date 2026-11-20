@@ -1,6 +1,7 @@
 import json
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional
+from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
@@ -8,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.modules.accounts.models import Account
 from app.modules.transactions.models import Transaction
+from app.modules.tenants.models import Tenant
 from app.modules.users.service import UserService
 from app.core.config import settings
 from app.modules.transactions.schemas import (
@@ -49,13 +51,38 @@ class TransactionService:
         "EUR": Decimal("1.00"),
     }
 
+    @staticmethod
+    def get_tenant_config(db: Session, tenant_id: str) -> Tenant:
+        tenant = db.query(Tenant).filter(Tenant.id == UUID(tenant_id)).first()
+        if tenant is None:
+            raise HTTPException(status_code=404, detail="Institución no encontrada.")
+        return tenant
+
+    @staticmethod
+    def calculate_transfer_fee(tenant: Tenant, currency: str, amount: Decimal) -> Decimal:
+        fixed_fees = tenant.transfer_fees or {}
+        fixed_fee = Decimal(str(fixed_fees.get(currency.upper(), "0.00")))
+        percentage = Decimal(str(tenant.transfer_fee_percent or "0"))
+        return (fixed_fee + amount * percentage).quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP
+        )
+
     @classmethod
-    def get_exchange_rate(cls, from_currency: str, to_currency: str) -> Decimal:
+    def get_exchange_rate(
+        cls, from_currency: str, to_currency: str, tenant: Tenant | None = None
+    ) -> Decimal:
         from_curr = from_currency.upper()
         to_curr = to_currency.upper()
         if from_curr == to_curr:
             return Decimal("1.000000")
-        rate = cls.EXCHANGE_RATES.get((from_curr, to_curr))
+
+        configured_rates = tenant.exchange_rates if tenant else {}
+        configured_value = configured_rates.get(f"{from_curr}/{to_curr}")
+        rate = (
+            Decimal(str(configured_value))
+            if configured_value is not None
+            else cls.EXCHANGE_RATES.get((from_curr, to_curr))
+        )
         if rate is None:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -104,8 +131,16 @@ class TransactionService:
                 detail=f"La cuenta destino '{destination_account_number}' no existe o no está activa en esta institución."
             )
 
-        fee = cls.FIXED_FEES.get(source_acc.currency, Decimal("0.00"))
-        rate = cls.get_exchange_rate(source_acc.currency, dest_acc.currency)
+        tenant = cls.get_tenant_config(db, tenant_id)
+        if amount > tenant.max_transfer_amount:
+            raise HTTPException(
+                status_code=422,
+                detail=f"El límite por transferencia de esta institución es {tenant.max_transfer_amount} {source_acc.currency}.",
+            )
+        if dest_acc.currency not in (tenant.supported_currencies or []):
+            raise HTTPException(status_code=422, detail="La moneda destino no está habilitada para esta institución.")
+        fee = cls.calculate_transfer_fee(tenant, source_acc.currency, amount)
+        rate = cls.get_exchange_rate(source_acc.currency, dest_acc.currency, tenant)
         total_debited = amount + fee
         amount_to_credit = (amount * rate).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
@@ -206,9 +241,20 @@ class TransactionService:
                 detail="La divisa solicitada no coincide con la divisa de la cuenta origen.",
             )
 
-        # --- 4. Cálculo de Comisión y Conversión de Divisas ---
-        fee = cls.FIXED_FEES.get(source_acc.currency, Decimal("0.00"))
-        rate = cls.get_exchange_rate(source_acc.currency, dest_acc.currency)
+        # --- 4. Política comercial configurada por la institución ---
+        tenant = cls.get_tenant_config(db, tenant_id)
+        if data.amount > tenant.max_transfer_amount:
+            raise HTTPException(
+                status_code=422,
+                detail=f"El límite por transferencia de esta institución es {tenant.max_transfer_amount} {source_acc.currency}.",
+            )
+        if (
+            source_acc.currency not in (tenant.supported_currencies or [])
+            or dest_acc.currency not in (tenant.supported_currencies or [])
+        ):
+            raise HTTPException(status_code=422, detail="La moneda no está habilitada para esta institución.")
+        fee = cls.calculate_transfer_fee(tenant, source_acc.currency, data.amount)
+        rate = cls.get_exchange_rate(source_acc.currency, dest_acc.currency, tenant)
         total_to_debit = data.amount + fee
         amount_to_credit = (data.amount * rate).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
