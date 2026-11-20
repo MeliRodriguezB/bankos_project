@@ -137,8 +137,11 @@ class TransactionService:
                 status_code=422,
                 detail=f"El límite por transferencia de esta institución es {tenant.max_transfer_amount} {source_acc.currency}.",
             )
-        if dest_acc.currency not in (tenant.supported_currencies or []):
-            raise HTTPException(status_code=422, detail="La moneda destino no está habilitada para esta institución.")
+        if (
+            source_acc.currency not in (tenant.supported_currencies or [])
+            or dest_acc.currency not in (tenant.supported_currencies or [])
+        ):
+            raise HTTPException(status_code=422, detail="La moneda no está habilitada para esta institución.")
         fee = cls.calculate_transfer_fee(tenant, source_acc.currency, amount)
         rate = cls.get_exchange_rate(source_acc.currency, dest_acc.currency, tenant)
         total_debited = amount + fee
