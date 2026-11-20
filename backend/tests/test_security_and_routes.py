@@ -102,3 +102,28 @@ def test_production_accepts_deposits_disabled():
     )
     assert config.SIMULATED_DEPOSITS_ENABLED is False
 
+def test_static_exchange_rates_are_rejected_in_production(monkeypatch):
+    from fastapi import HTTPException
+    from app.modules.transactions.service import TransactionService
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+    try:
+        TransactionService.get_exchange_rate("COP", "USD")
+    except HTTPException as exc:
+        assert exc.status_code == 503
+    else:
+        raise AssertionError("Las tasas estáticas no deben utilizarse en producción")
+
+
+def test_unknown_exchange_pair_is_rejected():
+    from fastapi import HTTPException
+    from app.modules.transactions.service import TransactionService
+
+    try:
+        TransactionService.get_exchange_rate("COP", "GBP")
+    except HTTPException as exc:
+        assert exc.status_code == 422
+    else:
+        raise AssertionError("No se debe asumir una tasa 1:1 para divisas no configuradas")
+
