@@ -312,3 +312,49 @@ def test_transaction_audit_uses_the_same_correlation_id_as_response(monkeypatch)
     assert generated.json()["correlation_id"] == captured_ids[0]
     assert supplied.headers["X-Correlation-ID"] == "bankos-correlation-002"
     assert supplied.json()["correlation_id"] == "bankos-correlation-002"
+
+
+
+def test_demo_account_seed_preserves_existing_balance_and_status():
+    from decimal import Decimal
+
+    import pytest
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    from app.main import seed_demo_accounts
+    from app.modules.accounts.models import Account
+
+    engine = create_engine("sqlite:///:memory:")
+    Account.__table__.create(engine)
+    session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    db = session_factory()
+    seed = {
+        "id": "acc-seed-persistence",
+        "account_number": "1234567890",
+        "alias": "Demo account",
+        "tenant_id": "tenant-demo",
+        "user_id": "user-demo",
+        "balance": Decimal("2500.00"),
+        "currency": "COP",
+        "status": "ACTIVE",
+    }
+
+    try:
+        seed_demo_accounts(db, [seed])
+        account = db.query(Account).filter(Account.id == seed["id"]).one()
+        account.balance = Decimal("12345.67")
+        account.status = "BLOCKED"
+        db.commit()
+
+        seed_demo_accounts(db, [seed])
+        db.refresh(account)
+        assert account.balance == Decimal("12345.67")
+        assert account.status == "BLOCKED"
+
+        conflicting_identity = {**seed, "tenant_id": "another-tenant"}
+        with pytest.raises(RuntimeError, match="otra identidad"):
+            seed_demo_accounts(db, [conflicting_identity])
+    finally:
+        db.close()
+        engine.dispose()
