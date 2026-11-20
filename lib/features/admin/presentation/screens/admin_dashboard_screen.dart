@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/session_storage.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../auth/presentation/screens/login_screen.dart';
+import '../../../../features/auth/presentation/screens/login_screen.dart';
 import '../../data/models/admin_dashboard_model.dart';
 import '../../data/repositories/admin_dashboard_repository.dart';
 
@@ -14,7 +14,7 @@ class AdminDashboardScreen extends StatefulWidget {
 class _AdminDashboardScreenState extends State<AdminDashboardScreen>{
  late final AdminDashboardRepository _repository; AdminDashboardModel? _data; bool _loading=true; String? _error;
  @override void initState(){super.initState();_repository=widget.repository??AdminDashboardRepository();_load();}
- Future<void> _load() async {setState(()=>_loading=true);try{final data=await _repository.getDashboard();if(!mounted)return;setState(()=>_data=data);}catch(e){if(!mounted)return;setState(()=>_error=e.toString());}finally{if(mounted)setState(()=>_loading=false);}}
+ Future<void> _load() async {setState(()=>_loading=true);_error=null;try{final data=await _repository.getDashboard();if(!mounted)return;setState(()=>_data=data);}catch(e){if(!mounted)return;setState(()=>_error=e.toString());}finally{if(mounted)setState(()=>_loading=false);}}
  Future<void> _logout() async {ApiClient.setGlobalAuthToken(null);await SessionStorage().clearToken();if(!mounted)return;Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder:(_)=>const LoginScreen()),(_)=>false);}
  Widget _metric(String title,int value,IconData icon)=>Card(child:Padding(padding:const EdgeInsets.all(16),child:Row(children:[Icon(icon,color:AppTheme.accent,size:28),const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:const TextStyle(color:AppTheme.textSecondary,fontSize:12)),Text('$value',style:const TextStyle(fontWeight:FontWeight.w800,fontSize:22))]))])));
  String _amount(String v)=>(double.tryParse(v)??0).toStringAsFixed(2);
