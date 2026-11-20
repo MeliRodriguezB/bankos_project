@@ -36,7 +36,7 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   late DashboardRepository _repository;
   late TransactionRepository _txRepository;
-  bool _useMock = false;
+  bool _useMock = const bool.fromEnvironment('BANKOS_DEMO_MODE');
 
   DashboardModel? _dashboardData;
   bool _isLoading = true;
@@ -47,8 +47,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _repository = widget.repository ?? ApiDashboardRepository();
-    _txRepository = widget.transactionRepository ?? ApiTransactionRepository();
+    _useMock = const bool.fromEnvironment('BANKOS_DEMO_MODE');
+    _repository = widget.repository ??
+        (_useMock ? MockDashboardRepository() : ApiDashboardRepository());
+    _txRepository = widget.transactionRepository ??
+        (_useMock ? MockTransactionRepository() : ApiTransactionRepository());
     _fetchDashboard();
   }
 
