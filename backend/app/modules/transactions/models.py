@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 
-from sqlalchemy import Column, String, Numeric, DateTime, Index, Text
+from sqlalchemy import Column, String, Numeric, DateTime, Index, Text, event
 from app.db.base import Base
 
 
@@ -46,3 +46,16 @@ class Transaction(Base):
             postgresql_where=idempotency_key.isnot(None),
         ),
     )
+
+
+
+@event.listens_for(Transaction, "before_update")
+def prevent_transaction_update(_mapper, _connection, _target):
+    """Los registros financieros son append-only y no se editan después de crearse."""
+    raise ValueError("Los registros de transacciones son inmutables.")
+
+
+@event.listens_for(Transaction, "before_delete")
+def prevent_transaction_delete(_mapper, _connection, _target):
+    """Las transacciones se conservan como evidencia de auditoría."""
+    raise ValueError("Los registros de transacciones no se pueden eliminar.")
