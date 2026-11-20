@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.modules.accounts.models import Account
 from app.modules.transactions.models import Transaction
+from app.modules.users.service import UserService
 from app.modules.transactions.schemas import (
     TransferRequest,
     DepositRequest,
@@ -154,13 +155,8 @@ class TransactionService:
                     )
                 return cls._to_response(existing_tx)
 
-        # --- 2. Verificación de Doble Factor (PIN) ---
-        # En BankOS de demo el PIN de prueba estándar es "1234"
-        if data.pin != "1234":
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="El PIN de autorización ingresado es incorrecto."
-            )
+        # --- 2. Verificación del PIN individual almacenado con Argon2 ---
+        UserService.verify_transaction_pin(db, user_id, data.pin)
 
         # --- 3. Validación de Cuentas y Aislamiento Multitenant ---
         source_acc = db.query(Account).filter(
@@ -367,8 +363,7 @@ class TransactionService:
                     )
                 return cls._to_response(existing)
 
-        if data.pin != "1234":
-            raise HTTPException(status_code=401, detail="PIN de autorización incorrecto.")
+        UserService.verify_transaction_pin(db, user_id, data.pin)
 
         account = db.query(Account).filter(
             Account.id == data.account_id,
