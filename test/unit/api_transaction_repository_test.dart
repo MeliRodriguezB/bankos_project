@@ -15,7 +15,7 @@ void main() {
     test('transfer sends JWT, correlation and idempotency headers', () async {
       late http.Request capturedRequest;
       final client = MockClient((request) async {
-        capturedRequest = request as http.Request;
+        capturedRequest = request;
         return http.Response(
           jsonEncode({
             'id': 'tx-transfer-001',
