@@ -6,6 +6,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'core/network/api_client.dart';
 import 'core/network/session_storage.dart';
 import 'features/auth/presentation/screens/biometric_lock_screen.dart';
+import 'features/auth/presentation/screens/transaction_pin_setup_screen.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/dashboard/presentation/screens/dashboard_screen.dart';
@@ -64,10 +65,30 @@ class _SessionGateState extends State<SessionGate> {
     }
 
     ApiClient.setGlobalAuthToken(token);
+    final isAdmin = _hasAdminRole(token);
+
+    // Los administradores no usan el PIN transaccional de clientes.
+    if (!isAdmin) {
+      try {
+        final pinStatus = await ApiClient().get('/users/me/transaction-pin') as Map<String, dynamic>;
+        if (pinStatus['configured'] != true) {
+          return TransactionPinSetupScreen(
+            apiClient: ApiClient(),
+            nextScreen: const DashboardScreen(),
+          );
+        }
+      } catch (_) {
+        // Si no se puede verificar el estado de PIN, no se asume que está configurado.
+        await storage.clearToken();
+        ApiClient.setGlobalAuthToken(null);
+        return const LoginScreen();
+      }
+    }
+
     if (await storage.isBiometricEnabled()) {
       return const BiometricLockScreen();
     }
-    return _hasAdminRole(token) ? const AdminDashboardScreen() : const DashboardScreen();
+    return isAdmin ? const AdminDashboardScreen() : const DashboardScreen();
   }
 
   bool _hasAdminRole(String token) {
