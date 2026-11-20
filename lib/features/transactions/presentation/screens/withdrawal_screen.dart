@@ -169,7 +169,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
               TextFormField(
                 controller: _amountController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(prefixText: '$ ', suffixText: _selectedAccount?.currency, border: const OutlineInputBorder()),
+                decoration: InputDecoration(prefixText: '\$ ', suffixText: _selectedAccount?.currency, border: const OutlineInputBorder()),
                 validator: (value) {
                   final amount = double.tryParse(value?.trim() ?? '');
                   if (amount == null || amount <= 0) return 'Ingresa un monto válido mayor a cero.';
