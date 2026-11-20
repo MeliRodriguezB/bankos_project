@@ -10,6 +10,7 @@ from app.core.security import hash_password
 from app.db.base import Base
 from app.modules.accounts.models import Account
 from app.modules.tenants.models import Tenant
+from app.modules.transactions.models import Transaction
 from app.modules.transactions.schemas import TransferRequest
 from app.modules.transactions.service import TransactionService
 from app.modules.users.models import User
@@ -205,3 +206,20 @@ def test_tenant_fee_percentage_is_applied(financial_db):
     assert result.fee_amount == "1600.00"
     assert source.balance == Decimal("88400.00")
     assert destination.balance == Decimal("10000.00")
+
+
+
+def test_transaction_audit_record_cannot_be_modified(financial_db):
+    db, tenant, user, source, _ = financial_db
+    TransactionService.process_transfer(
+        db, str(tenant.id), str(user.id), _transfer(source.id),
+        "immutable-audit-001", "corr-immutable"
+    )
+    transaction = db.query(Transaction).filter(
+        Transaction.idempotency_key == "immutable-audit-001"
+    ).one()
+    transaction.description = "tampered audit record"
+
+    with pytest.raises(ValueError, match="inmutables"):
+        db.commit()
+    db.rollback()
