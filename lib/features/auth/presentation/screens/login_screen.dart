@@ -229,7 +229,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ],
                       ),
-                      child: const Icon(Icons.account_balance_rounded, color: Colors.white, size: 40),
+                      child: Icon(Icons.account_balance_rounded, color: _bankForeground, size: 40),
                     ),
                   ),
                   const SizedBox(height: 20),
