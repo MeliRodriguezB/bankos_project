@@ -2,7 +2,7 @@
 
 BankOS es una plataforma moderna de **Banking-as-a-Service (BaaS)** con arquitectura cliente-servidor, diseñada para soportar múltiples instituciones financieras (cooperativas, neobancos y fintechs) de forma aislada, segura y escalable.
 
-El cliente móvil y web está construido con **Flutter**, y el backend de alta concurrencia expone una API REST construida con **FastAPI**, persistencia en **PostgreSQL 16**. Redis 7 está provisionado en Compose, pero su integración funcional queda pendiente; la idempotencia transaccional actual se garantiza en PostgreSQL.
+El cliente móvil y web está construido con **Flutter**, y el backend de alta concurrencia expone una API REST construida con **FastAPI**, persistencia en **PostgreSQL 16**. Redis 7 se utiliza para limitar solicitudes por IP; la idempotencia transaccional se garantiza mediante una restricción única en PostgreSQL.
 
 ---
 
@@ -26,7 +26,8 @@ El proyecto cuenta con la integración de las 3 Personas de desarrollo:
    - Pre-cotización de transferencias (*Quote breakdown*) con desglose previo de costos y comisiones.
    - Autorización mediante segundo factor (PIN de 4 dígitos).
    - Mecanismo de **Idempotencia** con encabezado `Idempotency-Key` para evitar cargos duplicados.
-   - Conversión de divisas con tabla de tasas estáticas y comisión bancaria parametrizada.
+   - Conversión de divisas y comisiones configurables por institución.
+   - Límites de transferencia, monedas soportadas y configuración de webhook por tenant.
    - Historial paginado con etiquetas visuales de costo y conversión.
 
 ---
@@ -37,7 +38,7 @@ El proyecto cuenta con la integración de las 3 Personas de desarrollo:
 - **Backend:** Python 3.12, FastAPI, SQLAlchemy 2.0, Pydantic v2.
 - **Seguridad:** Argon2id, PyJWT.
 - **Base de Datos:** PostgreSQL 16 Alpine (`Numeric(18, 2)` para precisión monetaria exacta).
-- **Servicio auxiliar provisionado:** Redis 7 Alpine (sin uso activo en el flujo de transacciones actual).
+- **Servicio auxiliar:** Redis 7 Alpine (rate limiting; la idempotencia permanece respaldada por PostgreSQL).
 - **Contenedores:** Docker y Docker Compose.
 
 ---
