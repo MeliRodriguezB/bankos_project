@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/network/session_storage.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/login_request.dart';
 import '../../data/repositories/auth_repository.dart';
@@ -21,14 +22,14 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController(text: 'carlos@fintech.com');
-  final _passwordController = TextEditingController(text: '123456');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final SessionStorage _sessionStorage = SessionStorage();
   String _selectedTenantSlug = 'cooperativa-futuro';
 
   late AuthRepository _repository;
   late ApiClient _apiClient;
   bool _useMock = false;
-
   bool _isLoading = false;
   bool _obscurePassword = true;
   String? _errorMessage;
@@ -62,7 +63,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
-
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -74,27 +74,23 @@ class _LoginScreenState extends State<LoginScreen> {
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
-
       final response = await _repository.login(request);
 
-      // Inyectar el token en el cliente de API para las peticiones subsecuentes
+      // Guarda el token antes de navegar para mantener la sesión entre reinicios.
+      await _sessionStorage.saveToken(response.accessToken);
       _apiClient.setAuthToken(response.accessToken);
 
-      if (mounted) {
-        setState(() => _isLoading = false);
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => const DashboardScreen(),
-          ),
-        );
-      }
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const DashboardScreen()),
+      );
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _errorMessage = e is ApiException ? e.message : e.toString();
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e is ApiException ? e.message : e.toString();
+      });
     }
   }
 
@@ -133,7 +129,6 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Logo e Identidad BankOS
                   Center(
                     child: Container(
                       padding: const EdgeInsets.all(16),
@@ -148,11 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ],
                       ),
-                      child: const Icon(
-                        Icons.account_balance_rounded,
-                        color: Colors.white,
-                        size: 40,
-                      ),
+                      child: const Icon(Icons.account_balance_rounded, color: Colors.white, size: 40),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -170,14 +161,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   const Text(
                     'Plataforma Bancaria Multitenant',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppTheme.textSecondary,
-                    ),
+                    style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
                   ),
                   const SizedBox(height: 32),
-
-                  // Mensaje de Error si ocurre
                   if (_errorMessage != null) ...[
                     Container(
                       padding: const EdgeInsets.all(12),
@@ -193,11 +179,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           Expanded(
                             child: Text(
                               _errorMessage!,
-                              style: const TextStyle(
-                                color: Color(0xFF991B1B),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
+                              style: const TextStyle(color: Color(0xFF991B1B), fontSize: 13, fontWeight: FontWeight.w500),
                             ),
                           ),
                         ],
@@ -205,16 +187,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 18),
                   ],
-
-                  // Campo 1: Selector de Institución (Tenant)
-                  const Text(
-                    'Institución Financiera (Tenant)',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
+                  const Text('Institución Financiera (Tenant)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
                   const SizedBox(height: 6),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -229,34 +202,17 @@ class _LoginScreenState extends State<LoginScreen> {
                         isExpanded: true,
                         icon: const Icon(Icons.keyboard_arrow_down_rounded),
                         items: const [
-                          DropdownMenuItem(
-                            value: 'cooperativa-futuro',
-                            child: Text('Cooperativa Financiera Futuro'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'neobanco-agil',
-                            child: Text('Neobanco Ágil (Otro Tenant)'),
-                          ),
+                          DropdownMenuItem(value: 'cooperativa-futuro', child: Text('Cooperativa Financiera Futuro')),
+                          DropdownMenuItem(value: 'neobanco-agil', child: Text('Neobanco Ágil')),
                         ],
-                        onChanged: (val) {
-                          if (val != null) {
-                            setState(() => _selectedTenantSlug = val);
-                          }
+                        onChanged: (value) {
+                          if (value != null) setState(() => _selectedTenantSlug = value);
                         },
                       ),
                     ),
                   ),
                   const SizedBox(height: 18),
-
-                  // Campo 2: Correo Electrónico
-                  const Text(
-                    'Correo electrónico',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
+                  const Text('Correo electrónico', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
                   const SizedBox(height: 6),
                   TextFormField(
                     controller: _emailController,
@@ -266,86 +222,45 @@ class _LoginScreenState extends State<LoginScreen> {
                       prefixIcon: const Icon(Icons.email_outlined, size: 20),
                       filled: true,
                       fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppTheme.border),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppTheme.border),
-                      ),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppTheme.border)),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppTheme.border)),
                     ),
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty) return 'Ingresa tu correo';
-                      if (!v.contains('@')) return 'Ingresa un correo válido';
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) return 'Ingresa tu correo';
+                      if (!value.contains('@')) return 'Ingresa un correo válido';
                       return null;
                     },
                   ),
                   const SizedBox(height: 18),
-
-                  // Campo 3: Contraseña
-                  const Text(
-                    'Contraseña',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
+                  const Text('Contraseña', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
                   const SizedBox(height: 6),
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     decoration: InputDecoration(
-                      hintText: '••••••••',
+                      hintText: 'Contraseña',
                       prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20),
                       suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                          size: 20,
-                        ),
+                        icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, size: 20),
                         onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                       ),
                       filled: true,
                       fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppTheme.border),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppTheme.border),
-                      ),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppTheme.border)),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppTheme.border)),
                     ),
-                    validator: (v) {
-                      if (v == null || v.isEmpty) return 'Ingresa tu contraseña';
+                    validator: (value) {
+                      if (value == null || value.isEmpty) return 'Ingresa tu contraseña';
                       return null;
                     },
                   ),
                   const SizedBox(height: 28),
-
-                  // Botón de Inicio de Sesión
                   ElevatedButton(
                     onPressed: _isLoading ? null : _handleLogin,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
+                    style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
                     child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Text(
-                            'Iniciar Sesión',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+                        : const Text('Iniciar Sesión', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
