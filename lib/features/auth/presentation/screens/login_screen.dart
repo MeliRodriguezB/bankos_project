@@ -28,7 +28,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final SessionStorage _sessionStorage = SessionStorage();
-  String _selectedTenantSlug = 'cooperativa-futuro';
+  String _selectedTenantSlug = 'bancolombia';
 
   late AuthRepository _repository;
   late ApiClient _apiClient;
@@ -250,8 +250,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         isExpanded: true,
                         icon: const Icon(Icons.keyboard_arrow_down_rounded),
                         items: const [
-                          DropdownMenuItem(value: 'cooperativa-futuro', child: Text('Cooperativa Financiera Futuro')),
-                          DropdownMenuItem(value: 'neobanco-agil', child: Text('Neobanco Ágil')),
+                          DropdownMenuItem(value: 'bancolombia', child: Text('Bancolombia')),
+                          DropdownMenuItem(value: 'banco-popular', child: Text('Banco Popular')),
+                          DropdownMenuItem(value: 'nequi', child: Text('Nequi')),
+                          DropdownMenuItem(value: 'nu', child: Text('Nu')),
                         ],
                         onChanged: (value) {
                           if (value != null) setState(() => _selectedTenantSlug = value);
