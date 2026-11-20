@@ -91,7 +91,7 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
             icon: _busy ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.lock_open),
             label: const Text('Desbloquear'),
           ),
-          TextButton(onPressed: _logout, child: const Text('Cerrar sesión')),
+          TextButton(onPressed: _logout, child: const Text('Ingresar con contraseña')),
         ]),
       ),
     ),
