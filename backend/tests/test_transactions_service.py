@@ -374,3 +374,66 @@ def test_idempotency_key_remains_valid_after_more_than_24_hours(financial_db):
     assert second.created_at.replace(tzinfo=timezone.utc) <= old_timestamp
     assert source.balance == Decimal("97500.00")
     assert destination.balance == Decimal("1000.00")
+
+
+
+def test_second_tenant_transfer_uses_only_its_own_seeded_accounts(financial_db):
+    db, tenant1, user, source1, destination1 = financial_db
+    tenant2 = Tenant(
+        id=uuid4(),
+        name="Neobanco Ágil",
+        slug="neobanco-agil",
+        status="ACTIVE",
+    )
+    db.add(tenant2)
+    db.flush()
+
+    source2 = Account(
+        id="tenant2-source",
+        account_number="8880001234",
+        alias="Cuenta Neobanco Ágil",
+        tenant_id=str(tenant2.id),
+        user_id=str(user.id),
+        balance=Decimal("100000.00"),
+        currency="COP",
+        status="ACTIVE",
+    )
+    destination2 = Account(
+        id="tenant2-destination",
+        account_number="8880005678",
+        alias="Cuenta secundaria Neobanco Ágil",
+        tenant_id=str(tenant2.id),
+        user_id=str(user.id),
+        balance=Decimal("250000.00"),
+        currency="COP",
+        status="ACTIVE",
+    )
+    db.add_all([source2, destination2])
+    db.commit()
+
+    request = TransferRequest(
+        source_account_id=source2.id,
+        destination_account_number=destination2.account_number,
+        amount=Decimal("1000.00"),
+        currency="COP",
+        pin="1234",
+        description="Transfer within second tenant",
+    )
+    result = TransactionService.process_transfer(
+        db,
+        str(tenant2.id),
+        str(user.id),
+        request,
+        "tenant2-transfer-001",
+        "corr-tenant2-transfer",
+    )
+
+    db.refresh(source1)
+    db.refresh(destination1)
+    db.refresh(source2)
+    db.refresh(destination2)
+    assert result.status == "COMPLETED"
+    assert source2.balance == Decimal("97500.00")
+    assert destination2.balance == Decimal("251000.00")
+    assert source1.balance == Decimal("100000.00")
+    assert destination1.balance == Decimal("0.00")
