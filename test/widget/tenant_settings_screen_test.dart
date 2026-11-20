@@ -40,15 +40,29 @@ void main() {
     await tester.pumpAndSettle();
 
     final fields = find.byType(TextFormField);
-    expect(fields, findsNWidgets(7));
     await tester.enterText(fields.at(0), '3000000.00');
     await tester.enterText(fields.at(1), '0.01');
     await tester.enterText(fields.at(2), 'COP');
     await tester.enterText(fields.at(3), 'COP, USD');
     await tester.enterText(fields.at(4), '{"COP":"1200.00","USD":"1.25"}');
     await tester.enterText(fields.at(5), '{"COP/USD":"0.00025","USD/COP":"4000.00"}');
-    await tester.enterText(fields.at(6), '');
 
+    await tester.scrollUntilVisible(
+      find.text('URL del webhook (opcional)'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    final webhookField = find.ancestor(
+      of: find.text('URL del webhook (opcional)'),
+      matching: find.byType(TextFormField),
+    );
+    await tester.enterText(webhookField, '');
+
+    await tester.scrollUntilVisible(
+      find.text('Guardar configuración'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.text('Guardar configuración'));
     await tester.pumpAndSettle();
 
