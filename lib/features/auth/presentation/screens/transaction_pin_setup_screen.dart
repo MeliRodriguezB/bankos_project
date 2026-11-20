@@ -63,7 +63,7 @@ class _TransactionPinSetupScreenState extends State<TransactionPinSetupScreen> {
 
   String? _validatePin(String? value) {
     if (value == null || value.length != 4) return 'Ingresa exactamente 4 dígitos';
-    if (!RegExp(r'^\d{4}.hasMatch(value)) return 'El PIN solo puede contener números';
+    if (!RegExp(r'^\d{4}$').hasMatch(value)) return 'El PIN solo puede contener números';
     return null;
   }
 
