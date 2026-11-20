@@ -27,6 +27,15 @@ abstract class TransactionRepository {
     required String idempotencyKey,
   });
 
+  Future<TransactionModel> withdraw({
+    required String accountId,
+    required String amount,
+    required String currency,
+    required String pin,
+    String? description,
+    required String idempotencyKey,
+  });
+
   Future<List<TransactionModel>> getHistory({
     String? accountId,
     String? type,
@@ -94,6 +103,29 @@ class ApiTransactionRepository implements TransactionRepository {
         'account_id': accountId,
         'amount': amount,
         'currency': currency,
+        'description': description,
+      },
+      idempotencyKey: idempotencyKey,
+    );
+    return TransactionModel.fromJson(response as Map<String, dynamic>);
+  }
+
+  @override
+  Future<TransactionModel> withdraw({
+    required String accountId,
+    required String amount,
+    required String currency,
+    required String pin,
+    String? description,
+    required String idempotencyKey,
+  }) async {
+    final response = await _apiClient.post(
+      '/transactions/withdrawals',
+      {
+        'account_id': accountId,
+        'amount': amount,
+        'currency': currency,
+        'pin': pin,
         'description': description,
       },
       idempotencyKey: idempotencyKey,
@@ -257,6 +289,37 @@ class MockTransactionRepository implements TransactionRepository {
       status: 'COMPLETED',
       idempotencyKey: idempotencyKey,
       description: description ?? 'Depósito de fondos',
+      createdAt: DateTime.now(),
+    );
+    _mockHistory.insert(0, newTx);
+    return newTx;
+  }
+
+  @override
+  Future<TransactionModel> withdraw({
+    required String accountId,
+    required String amount,
+    required String currency,
+    required String pin,
+    String? description,
+    required String idempotencyKey,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (pin != '1234') {
+      throw ApiException(statusCode: 401, message: 'PIN incorrecto. (Usa: 1234)');
+    }
+    final newTx = TransactionModel(
+      id: 'tx-${DateTime.now().millisecondsSinceEpoch}',
+      type: 'WITHDRAWAL',
+      amount: amount,
+      currency: currency,
+      feeAmount: '0.00',
+      exchangeRate: '1.000000',
+      convertedAmount: amount,
+      destinationCurrency: currency,
+      status: 'COMPLETED',
+      idempotencyKey: idempotencyKey,
+      description: description ?? 'Retiro de efectivo',
       createdAt: DateTime.now(),
     );
     _mockHistory.insert(0, newTx);
