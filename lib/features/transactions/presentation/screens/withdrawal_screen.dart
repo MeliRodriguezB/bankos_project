@@ -190,7 +190,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
                 controller: _amountController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(
-                  prefixText: '\\$ ',
+                  prefixText: '\$ ',
                   suffixText: _selectedAccount?.currency,
                   border: const OutlineInputBorder(),
                 ),
