@@ -7,6 +7,7 @@ from app.modules.users.schemas import (
     TransactionPinStatusResponse,
 )
 from app.modules.users.service import UserService
+from app.modules.users.models import PlatformAdmin
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -31,3 +32,17 @@ def configure_transaction_pin(
         current_password=data.current_password,
         pin=data.pin,
     )
+
+
+@router.get("/me/platform-admin")
+def get_platform_admin_status(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """Confirma el privilegio global consultando la base de datos, no solo el rol del tenant."""
+    is_platform_admin = db.query(PlatformAdmin).filter(
+        PlatformAdmin.user_id == current_user["user_id"],
+        PlatformAdmin.is_active.is_(True),
+    ).first() is not None
+    return {"is_platform_admin": is_platform_admin}
+
