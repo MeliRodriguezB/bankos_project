@@ -60,8 +60,8 @@ def seed_database():
 
         # Branding por institución: el dashboard utilizará estas paletas.
         bank_branding = [
-            (tenant1, "#007A4B", "#FFFFFF", "#19A86B"),  # Bancolombia
-            (tenant2, "#B5121B", "#FFFFFF", "#E34A50"),  # Banco Popular
+            (tenant1, "#FFD600", "#FFFFFF", "#F2B900"),  # Bancolombia: amarillo
+            (tenant2, "#00843D", "#FFFFFF", "#35A85A"),  # Banco Popular: verde
             (tenant3, "#DA0081", "#FFFFFF", "#F35BB0"),  # Nequi
             (tenant4, "#820AD1", "#FFFFFF", "#B66CE6"),  # Nu
         ]
