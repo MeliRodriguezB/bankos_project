@@ -122,6 +122,9 @@ class TransactionService:
         """
         Ejecuta una transferencia atómica con control de idempotencia y conversión multimoneda.
         """
+        # Validar PIN también en reintentos idempotentes.
+        UserService.verify_transaction_pin(db, user_id, data.pin)
+
         # --- 1. Verificación de Idempotencia ---
         if idempotency_key:
             existing_tx = db.query(Transaction).filter(
@@ -154,9 +157,6 @@ class TransactionService:
                         detail="La Idempotency-Key ya fue utilizada con datos diferentes.",
                     )
                 return cls._to_response(existing_tx)
-
-        # --- 2. Verificación del PIN individual almacenado con Argon2 ---
-        UserService.verify_transaction_pin(db, user_id, data.pin)
 
         # --- 3. Validación de Cuentas y Aislamiento Multitenant ---
         source_acc = db.query(Account).filter(
@@ -342,6 +342,9 @@ class TransactionService:
         correlation_id: str
     ) -> TransactionResponse:
         """Debita fondos de una cuenta bancaria."""
+        # Validar PIN también en reintentos idempotentes.
+        UserService.verify_transaction_pin(db, user_id, data.pin)
+
         if idempotency_key:
             existing = db.query(Transaction).filter(
                 Transaction.tenant_id == tenant_id,
