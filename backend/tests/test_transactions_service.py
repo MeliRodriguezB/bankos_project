@@ -96,7 +96,7 @@ def _transfer(source_id: str, amount: str = "1000.00") -> TransferRequest:
     )
 
 
-def test_transfer_debits_and_credits_atomically(financial_db):
+def test_transfer_debits_amount_and_fee_and_credits_destination_atomically(financial_db):
     db, tenant, user, source, destination = financial_db
 
     result = TransactionService.process_transfer(
@@ -111,7 +111,8 @@ def test_transfer_debits_and_credits_atomically(financial_db):
     db.refresh(source)
     db.refresh(destination)
     assert result.status == "COMPLETED"
-    assert source.balance == Decimal("98500.00")
+    # The source pays both the transfer amount (1,000) and the configured fee (1,500).
+    assert source.balance == Decimal("97500.00")
     assert destination.balance == Decimal("1000.00")
     assert result.fee_amount == "1500.00"
 
@@ -130,7 +131,7 @@ def test_same_idempotency_key_does_not_double_charge(financial_db):
     db.refresh(source)
     db.refresh(destination)
     assert first.id == second.id
-    assert source.balance == Decimal("98500.00")
+    assert source.balance == Decimal("97500.00")
     assert destination.balance == Decimal("1000.00")
 
 
@@ -216,7 +217,6 @@ def test_tenant_fee_percentage_is_applied(financial_db):
     assert destination.balance == Decimal("10000.00")
 
 
-
 def test_transaction_audit_record_cannot_be_modified(financial_db):
     db, tenant, user, source, _ = financial_db
     TransactionService.process_transfer(
@@ -231,7 +231,6 @@ def test_transaction_audit_record_cannot_be_modified(financial_db):
     with pytest.raises(ValueError, match="inmutables"):
         db.commit()
     db.rollback()
-
 
 
 def test_multicurrency_transfer_uses_tenant_rate_and_fee(financial_db):
@@ -269,7 +268,6 @@ def test_multicurrency_transfer_uses_tenant_rate_and_fee(financial_db):
     assert result.fee_amount == "1.00"
     assert usd_source.balance == Decimal("89.00")
     assert destination.balance == Decimal("40000.00")
-
 
 
 def test_deposit_is_idempotent(financial_db):
