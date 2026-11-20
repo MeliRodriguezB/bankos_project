@@ -142,24 +142,24 @@ flutter run -d chrome
 
 ## 🔐 Credenciales de Prueba Pre-cargadas (Seed Data)
 
-La base de datos se inicializa automáticamente al arrancar con datos de prueba listos para usar:
+La base de datos de demostración crea al usuario compartido para probar el aislamiento multi-tenant en las cuatro instituciones. Selecciona el banco en el login y utiliza:
 
-### Institución 1: Cooperativa Futuro
-- **Institución:** `Cooperativa Futuro` (slug: `cooperativa-futuro`)
-- **Correo Electrónico:** `carlos@fintech.com`
-- **Contraseña:** `123456`
-- **PIN de Transferencias (2FA):** `1234`
-- **Cuentas disponibles:**
-  - `CU-1002003001` (Cuenta Corriente Principal - COP)
-  - `AH-2003004002` (Fondo de Emergencia - COP)
-  - `US-3004005003` (Ahorros Dólares - USD)
+- **Correo:** `carlos@fintech.com`
+- **Contraseña demo:** `123456`
+- **PIN transaccional:** se configura desde la aplicación en el primer ingreso; no se precarga uno fijo.
 
-### Institución 2: Neobanco Ágil (Aislamiento Multi-Tenant)
-- **Institución:** `Neobanco Ágil` (slug: `neobanco-agil`)
-- **Correo Electrónico:** `ana@neobanco.com`
-- **Contraseña:** `123456`
-- **PIN de Transferencias (2FA):** `1234`
-- *(Permite verificar que ningún usuario de una entidad puede ver cuentas ni saldos de otra).*
+### Cuentas demo por institución
+
+| Institución | Número de cuenta | Alias | Saldo inicial | Divisa |
+|---|---|---|---:|---|
+| Bancolombia | `1002348911` | Cuenta de Ahorros Principal | 2.450.000 | COP |
+| Bancolombia | `1002348922` | Fondo de Emergencia | 450.000 | COP |
+| Bancolombia | `2005541100` | Ahorro Dólares | 350.00 | USD |
+| Bancolombia | `1002348999` | Cuenta Nómina Desactivada | 0 | COP (inactiva) |
+| Banco Popular | `8880001234` | Cuenta Banco Popular | 99.999.999 | COP |
+| Nequi | `7770001234` | Cuenta Nequi | 1.250.000 | COP |
+| Nu | `6660001234` | Cuenta Nu | 820.000 | COP |
+
 
 ---
 
@@ -171,7 +171,7 @@ Para ejecutar la suite de 18 pruebas unitarias y de widgets (formateo de moneda,
 ```bash
 flutter test
 ```
-*Resultado: 18 pruebas pasando (100% de éxito).*
+*No se ha ejecutado la suite en este entorno; el resultado debe verificarse localmente antes de considerar la validación final.*
 
 ---
 
