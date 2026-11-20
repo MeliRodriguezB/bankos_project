@@ -5,10 +5,12 @@ on:
     branches:
       - develop
       - "fix/**"
+      - "feat/**"
   pull_request:
     branches:
       - develop
       - "fix/**"
+      - "feat/**"
 
 permissions:
   contents: read
