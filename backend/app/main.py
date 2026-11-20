@@ -24,6 +24,7 @@ from app.modules.transactions.router import router as transactions_router
 from app.modules.users.router import router as users_router
 from app.modules.tenants.router import router as tenants_router
 from app.core.rate_limit import RateLimitMiddleware
+from app.core.error_handlers import register_exception_handlers
 
 
 def seed_database():
@@ -315,6 +316,8 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+register_exception_handlers(app)
 
 # Limita autenticación y operaciones financieras por IP usando Redis.
 app.add_middleware(RateLimitMiddleware, redis_url=settings.REDIS_URL)
