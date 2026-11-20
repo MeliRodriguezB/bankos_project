@@ -122,11 +122,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
       setState(() => _isLoading = false);
-      final isAdmin = !_useMock && response.user.roles.map((r) => r.toUpperCase()).contains('ADMIN');
-      Widget destination = isAdmin ? const AdminDashboardScreen() : const DashboardScreen();
+      // Verifica privilegio global en backend; ADMIN de un banco no es Platform Admin.
+      final isPlatformAdmin = !_useMock
+          ? ((await _apiClient.get('/users/me/platform-admin') as Map<String, dynamic>)['is_platform_admin'] == true)
+          : false;
+      Widget destination = isPlatformAdmin
+          ? const AdminDashboardScreen()
+          : const DashboardScreen();
 
-      // En modo API, consulta si el cliente ya tiene PIN antes de permitir operar.
-      if (!_useMock && !isAdmin) {
+      // Usuarios tenant, incluso admins bancarios, configuran PIN transaccional.
+      if (!_useMock && !isPlatformAdmin) {
         final pinStatus = await _apiClient.get('/users/me/transaction-pin') as Map<String, dynamic>;
         final isPinConfigured = pinStatus['configured'] == true;
         if (!isPinConfigured) {
