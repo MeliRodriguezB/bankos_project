@@ -299,6 +299,7 @@ class MockTransactionRepository implements TransactionRepository {
       createdAt: DateTime.now(),
     );
     _mockHistory.insert(0, newTx);
+    _mockIdempotentResults[idempotencyKey] = newTx;
     return newTx;
   }
 
@@ -332,6 +333,7 @@ class MockTransactionRepository implements TransactionRepository {
       createdAt: DateTime.now(),
     );
     _mockHistory.insert(0, newTx);
+    _mockIdempotentResults[idempotencyKey] = newTx;
     return newTx;
   }
 
