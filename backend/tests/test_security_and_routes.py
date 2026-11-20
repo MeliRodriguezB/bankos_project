@@ -358,3 +358,98 @@ def test_demo_account_seed_preserves_existing_balance_and_status():
     finally:
         db.close()
         engine.dispose()
+
+
+def _build_rate_limit_test_request(path: str, correlation_id: str):
+    from starlette.requests import Request
+
+    return Request({
+        "type": "http",
+        "asgi": {"version": "3.0"},
+        "http_version": "1.1",
+        "method": "POST",
+        "scheme": "http",
+        "path": path,
+        "raw_path": path.encode(),
+        "query_string": b"",
+        "root_path": "",
+        "headers": [],
+        "client": ("127.0.0.1", 12345),
+        "server": ("testserver", 80),
+        "state": {"correlation_id": correlation_id},
+    })
+
+
+def test_redis_rate_limiter_increments_shared_counter_and_sets_window_expiry():
+    import asyncio
+
+    from starlette.responses import Response
+
+    from app.core.rate_limit import RateLimitMiddleware
+
+    class FakeRedis:
+        def __init__(self):
+            self.keys = []
+            self.expirations = []
+
+        async def incr(self, key):
+            self.keys.append(key)
+            return 1
+
+        async def expire(self, key, seconds):
+            self.expirations.append((key, seconds))
+
+    middleware = RateLimitMiddleware(
+        app=lambda _scope, _receive, _send: None,
+        redis_url="redis://localhost:6379/0",
+    )
+    fake_redis = FakeRedis()
+    middleware.redis = fake_redis
+    request = _build_rate_limit_test_request(
+        "/api/v1/auth/login", "bankos-redis-counter-001"
+    )
+
+    async def call_next(_request):
+        return Response("ok", status_code=200)
+
+    response = asyncio.run(middleware.dispatch(request, call_next))
+
+    assert response.status_code == 200
+    assert len(fake_redis.keys) == 1
+    assert fake_redis.keys[0].startswith("bankos:rate:login:127.0.0.1:")
+    assert fake_redis.expirations == [(fake_redis.keys[0], 60)]
+
+
+def test_redis_rate_limiter_returns_correlated_429_after_login_limit():
+    import asyncio
+    import json
+
+    from app.core.rate_limit import RateLimitMiddleware
+
+    class FakeRedis:
+        async def incr(self, _key):
+            return 11
+
+        async def expire(self, _key, _seconds):
+            raise AssertionError("No debe renovar una ventana ya iniciada")
+
+    middleware = RateLimitMiddleware(
+        app=lambda _scope, _receive, _send: None,
+        redis_url="redis://localhost:6379/0",
+    )
+    middleware.redis = FakeRedis()
+    request = _build_rate_limit_test_request(
+        "/api/v1/auth/login", "bankos-redis-limit-002"
+    )
+
+    async def call_next(_request):
+        raise AssertionError("La solicitud limitada no debe llegar al endpoint")
+
+    response = asyncio.run(middleware.dispatch(request, call_next))
+    payload = json.loads(response.body)
+
+    assert response.status_code == 429
+    assert response.headers["Retry-After"] == "60"
+    assert response.headers["X-Correlation-ID"] == "bankos-redis-limit-002"
+    assert payload["error"]["code"] == "RATE_LIMIT_EXCEEDED"
+    assert payload["error"]["correlation_id"] == "bankos-redis-limit-002"
