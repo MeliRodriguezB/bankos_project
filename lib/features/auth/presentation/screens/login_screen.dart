@@ -41,9 +41,9 @@ class _LoginScreenState extends State<LoginScreen> {
   Color get _bankPrimary {
     switch (_selectedTenantSlug) {
       case 'bancolombia':
-        return const Color(0xFF007A4B);
+        return const Color(0xFFFFD600);
       case 'banco-popular':
-        return const Color(0xFFB5121B);
+        return const Color(0xFF00843D);
       case 'nequi':
         return const Color(0xFFDA0081);
       case 'nu':
