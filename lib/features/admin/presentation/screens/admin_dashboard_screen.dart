@@ -5,6 +5,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../features/auth/presentation/screens/login_screen.dart';
 import '../../data/models/admin_dashboard_model.dart';
 import '../../data/repositories/admin_dashboard_repository.dart';
+import 'tenant_settings_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   final AdminDashboardRepository? repository;
@@ -67,6 +68,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
+  Future<void> _openTenantSettings() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => TenantSettingsScreen(repository: _repository),
+      ),
+    );
+    if (mounted) _load();
+  }
+
   Widget _metric(String title, int value, IconData icon) {
     return Card(
       child: Padding(
@@ -116,6 +126,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       appBar: AppBar(
         title: const Text('BankOS · Administración'),
         actions: [
+          IconButton(
+            onPressed: _openTenantSettings,
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Configuración institucional',
+          ),
           IconButton(onPressed: _load, icon: const Icon(Icons.refresh), tooltip: 'Actualizar'),
           IconButton(onPressed: _logout, icon: const Icon(Icons.logout), tooltip: 'Cerrar sesión'),
         ],
