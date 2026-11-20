@@ -8,7 +8,7 @@ El cliente móvil y web está construido con **Flutter**, y el backend de alta c
 
 ## 🚧 Estado del Proyecto: Prototipo funcional en validación
 
-BankOS está preparado como prototipo demostrativo. No debe utilizarse para custodiar dinero real ni conectarse a cuentas bancarias reales. La validación automatizada y la preparación del despliegue continúan en la rama `fix/withdrawal-screen-ci`.
+BankOS está preparado como prototipo demostrativo. No debe utilizarse para custodiar dinero real ni conectarse a cuentas bancarias reales. La validación automatizada y el desarrollo funcional continúan en la rama `feat/transactions`.
 
 El proyecto cuenta con la integración de las 3 Personas de desarrollo:
 1. **Persona 1 (Autenticación e Inquilinos):**
@@ -57,8 +57,9 @@ bankos_project/
 │   │   └── main.py             # App FastAPI, CORS, eventos de ciclo de vida y Seed Data
 │   ├── Dockerfile
 │   └── requirements.txt
+├── docker-compose.yml          # Punto de entrada requerido para levantar todo el stack
 ├── infrastructure/
-│   └── docker-compose.yml      # Definición de servicios (api, db, redis)
+│   └── docker-compose.yml      # Variante organizada de infraestructura
 ├── lib/                        # Cliente Flutter
 │   ├── core/                   # Tema (Material 3), formateo monetario y ApiClient
 │   ├── features/
@@ -90,13 +91,13 @@ bankos_project/
 Desde la raíz del proyecto en una terminal (PowerShell o Bash):
 
 ```bash
-docker compose -f infrastructure/docker-compose.yml up --build -d
+docker compose up --build -d
 ```
 
 Verifica que los tres contenedores estén saludables:
 
 ```bash
-docker compose -f infrastructure/docker-compose.yml ps
+docker compose ps
 ```
 
 Deberás ver los servicios `bankos_api`, `bankos_db` y `bankos_redis` en estado `running (healthy)`.
@@ -139,6 +140,8 @@ Al iniciar el backend con `ENVIRONMENT=development`, el proceso de seed crea un 
 - **Cuenta USD:** `2005541100`
 
 El seed local configura el PIN `1234` para probar retiros y transferencias sin pasos manuales. Es una credencial débil y exclusiva del entorno de desarrollo; nunca debe reutilizarse ni habilitarse en un entorno público. En un entorno real, cada usuario debe configurar su propio PIN.
+
+Para probar el segundo tenant, usa la institución **Neobanco Ágil**. El seed crea la membresía de demostración para la misma identidad de prueba, con las cuentas aisladas bajo el tenant seleccionado. Las cuentas de una institución no se pueden consultar ni transferir desde la otra.
 
 La segunda institución contiene una cuenta de prueba aislada, pero no se crea automáticamente un usuario final para ella. No utilizar los datos de seed como cuentas reales.
 
