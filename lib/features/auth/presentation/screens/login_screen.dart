@@ -5,6 +5,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../data/models/login_request.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../../dashboard/presentation/screens/dashboard_screen.dart';
+import '../../../admin/presentation/screens/admin_dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final AuthRepository? repository;
@@ -89,7 +90,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       setState(() => _isLoading = false);
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const DashboardScreen()),
+        MaterialPageRoute(builder: (_) => _useMock ? const DashboardScreen() : (response.user.roles.map((r) => r.toUpperCase()).contains('ADMIN') ? const AdminDashboardScreen() : const DashboardScreen())),
       );
     } catch (e) {
       if (!mounted) return;
