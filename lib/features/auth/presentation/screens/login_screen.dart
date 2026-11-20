@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/session_storage.dart';
+import '../../../../core/security/biometric_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/login_request.dart';
 import '../../data/repositories/auth_repository.dart';
@@ -89,6 +90,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
       setState(() => _isLoading = false);
+      if (!_useMock) await _offerBiometricSetup();
+      if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => _useMock ? const DashboardScreen() : (response.user.roles.map((r) => r.toUpperCase()).contains('ADMIN') ? const AdminDashboardScreen() : const DashboardScreen())),
       );
@@ -98,6 +101,28 @@ class _LoginScreenState extends State<LoginScreen> {
         _isLoading = false;
         _errorMessage = e is ApiException ? e.message : e.toString();
       });
+    }
+  }
+
+
+  Future<void> _offerBiometricSetup() async {
+    final biometric = BiometricService();
+    final available = await biometric.isBiometricAvailable();
+    if (!available || !mounted || await _sessionStorage.isBiometricEnabled()) return;
+
+    final enable = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Activar ${biometric.platformLabel}?'),
+        content: Text('Puedes usar ${biometric.platformLabel} para desbloquear BankOS en próximos ingresos, sin escribir tu contraseña cada vez.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Ahora no')),
+          ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Activar')),
+        ],
+      ),
+    );
+    if (enable == true) {
+      await _sessionStorage.setBiometricEnabled(true);
     }
   }
 
