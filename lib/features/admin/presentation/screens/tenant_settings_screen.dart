@@ -138,6 +138,7 @@ class _TenantSettingsScreenState extends State<TenantSettingsScreen> {
     String? hint,
     int maxLines = 1,
     TextInputType keyboardType = TextInputType.text,
+    bool requiredField = true,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -153,8 +154,9 @@ class _TenantSettingsScreenState extends State<TenantSettingsScreen> {
           fillColor: Colors.white,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         ),
-        validator: (value) =>
-            value == null || value.trim().isEmpty ? 'Este campo es obligatorio' : null,
+        validator: (value) => requiredField && (value == null || value.trim().isEmpty)
+            ? 'Este campo es obligatorio'
+            : null,
       ),
     );
   }
@@ -244,6 +246,7 @@ class _TenantSettingsScreenState extends State<TenantSettingsScreen> {
                         label: 'URL del webhook (opcional)',
                         controller: _webhookController,
                         hint: 'https://hooks.example.test/bankos',
+                        requiredField: false,
                       ),
                       if (_error != null) ...[
                         Text(_error!, style: const TextStyle(color: AppTheme.error)),
