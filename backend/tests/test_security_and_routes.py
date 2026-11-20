@@ -1,4 +1,4 @@
-from fastapi import HTTPException
+from decimal import Decimal\n\nfrom fastapi import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 
 from app.core.dependencies import get_current_user
@@ -75,3 +75,27 @@ def test_transaction_pin_hash_is_not_plaintext():
     assert hashed != "0427"
     assert verify_password("0427", hashed)
     assert not verify_password("1234", hashed)
+
+
+def test_same_currency_exchange_rate_is_one():
+    from app.modules.transactions.service import TransactionService
+
+    assert TransactionService.get_exchange_rate("COP", "COP") == Decimal("1.000000")
+
+
+def test_configured_exchange_rate_is_returned():
+    from app.modules.transactions.service import TransactionService
+
+    assert TransactionService.get_exchange_rate("COP", "USD") == Decimal("0.00025")
+
+
+def test_unsupported_exchange_pair_is_rejected():
+    from app.modules.transactions.service import TransactionService
+
+
+    try:
+        TransactionService.get_exchange_rate("COP", "GBP")
+    except HTTPException as exc:
+        assert exc.status_code == 422
+    else:
+        raise AssertionError("Una conversión no configurada no debe asumir tasa 1.0")
