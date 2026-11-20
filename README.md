@@ -185,5 +185,5 @@ flutter build apk --release --dart-define=API_BASE_URL=https://tu-dominio.exampl
 
 ## 📖 Documentación Adicional
 
-Para más detalles sobre los contratos de datos, códigos HTTP y payloads exactos, consulta el archivo:
+- [Guía de despliegue de la demostración web](docs/deployment-demo.md)
 - [Contrato de API REST v1.0.0](docs/api-contract.md)
