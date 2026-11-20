@@ -437,3 +437,101 @@ def test_second_tenant_transfer_uses_only_its_own_seeded_accounts(financial_db):
     assert destination2.balance == Decimal("251000.00")
     assert source1.balance == Decimal("100000.00")
     assert destination1.balance == Decimal("0.00")
+
+
+def test_customer_dashboard_uses_tenant_name_and_primary_currency(financial_db):
+    from app.modules.accounts.service import AccountService
+
+    db, tenant, user, _, _ = financial_db
+    tenant.primary_currency = "USD"
+    db.commit()
+
+    dashboard = AccountService.get_dashboard_summary(
+        db,
+        str(tenant.id),
+        str(user.id),
+        user.full_name,
+        user.email,
+    )
+
+    assert dashboard.tenant.id == str(tenant.id)
+    assert dashboard.tenant.name == "Cooperativa de prueba"
+    assert dashboard.tenant.primary_currency == "USD"
+
+
+def test_admin_dashboard_uses_uuid_and_excludes_other_tenant_metrics(financial_db):
+    from app.modules.accounts.service import AccountService
+    from app.modules.tenants.models import TenantMembership
+
+    db, tenant, user, _, _ = financial_db
+    other_tenant = Tenant(
+        id=uuid4(),
+        name="Otra institución",
+        slug="otra-institucion",
+        status="ACTIVE",
+    )
+    other_user = User(
+        id=uuid4(),
+        email="other@example.test",
+        password_hash=hash_password("other-password"),
+        full_name="Other Customer",
+        is_active=True,
+    )
+    db.add_all([other_tenant, other_user])
+    db.flush()
+
+    db.add_all([
+        TenantMembership(
+            id=uuid4(),
+            tenant_id=tenant.id,
+            user_id=user.id,
+            status="ACTIVE",
+        ),
+        TenantMembership(
+            id=uuid4(),
+            tenant_id=other_tenant.id,
+            user_id=other_user.id,
+            status="ACTIVE",
+        ),
+        Account(
+            id="other-tenant-account",
+            account_number="9000000001",
+            alias="Other account",
+            tenant_id=str(other_tenant.id),
+            user_id=str(other_user.id),
+            balance=Decimal("90000.00"),
+            currency="COP",
+            status="ACTIVE",
+        ),
+        Transaction(
+            tenant_id=str(tenant.id),
+            user_id=str(user.id),
+            type="DEPOSIT",
+            amount=Decimal("100.00"),
+            currency="COP",
+            status="COMPLETED",
+            description="Current tenant transaction",
+        ),
+        Transaction(
+            tenant_id=str(other_tenant.id),
+            user_id=str(other_user.id),
+            type="DEPOSIT",
+            amount=Decimal("900.00"),
+            currency="COP",
+            status="COMPLETED",
+            description="Other tenant transaction",
+        ),
+    ])
+    db.commit()
+
+    dashboard = AccountService.get_tenant_admin_dashboard(db, str(tenant.id))
+
+    assert dashboard.tenant_id == str(tenant.id)
+    assert dashboard.tenant_name == tenant.name
+    assert dashboard.active_memberships == 1
+    assert dashboard.total_accounts == 2
+    assert dashboard.active_accounts == 2
+    assert dashboard.inactive_accounts == 0
+    assert dashboard.transactions_total == 1
+    assert len(dashboard.transactions_by_status_currency) == 1
+    assert dashboard.transactions_by_status_currency[0].total_amount == "100.00"

@@ -115,6 +115,13 @@ class AccountService:
     def get_dashboard_summary(
         db: Session, tenant_id: str, user_id: str, user_name: str, user_email: str
     ) -> DashboardResponse:
+        tenant = db.query(Tenant).filter(Tenant.id == UUID(tenant_id)).first()
+        if tenant is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Institución no encontrada.",
+            )
+
         accounts = AccountService.get_accounts_for_user(
             db, tenant_id, user_id, include_inactive=True
         )
@@ -162,9 +169,9 @@ class AccountService:
                 email=user_email or "usuario@bankos.com",
             ),
             tenant=DashboardTenant(
-                id=tenant_id,
-                name=f"Institución {tenant_id.replace('tenant-', '').capitalize()}",
-                primary_currency="COP",
+                id=str(tenant.id),
+                name=tenant.name,
+                primary_currency=tenant.primary_currency,
             ),
             balances_by_currency=balances_summary,
             accounts=accounts_response,
@@ -201,12 +208,13 @@ class AccountService:
     @staticmethod
     def get_tenant_admin_dashboard(db: Session, tenant_id: str) -> TenantAdminDashboardResponse:
         """Calcula métricas agregadas usando exclusivamente el tenant autenticado."""
-        tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+        tenant_uuid = UUID(tenant_id)
+        tenant = db.query(Tenant).filter(Tenant.id == tenant_uuid).first()
         if not tenant:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Institución no encontrada.")
 
         active_memberships = db.query(TenantMembership).filter(
-            TenantMembership.tenant_id == tenant_id,
+            TenantMembership.tenant_id == tenant_uuid,
             TenantMembership.status == "ACTIVE",
         ).count()
 
