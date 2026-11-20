@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - fix/withdrawal-screen-ci
+      - feat/transactions
   workflow_dispatch:
 
 permissions:
