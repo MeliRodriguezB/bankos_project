@@ -22,8 +22,8 @@ class TransferScreen extends StatefulWidget {
 class _TransferScreenState extends State<TransferScreen> {
   final _formKey = GlobalKey<FormState>();
   late AccountModel _selectedAccount;
-  final _destinationController = TextEditingController(text: '1002348922');
-  final _amountController = TextEditingController(text: '50000.00');
+  final _destinationController = TextEditingController();
+  final _amountController = TextEditingController();
   final _descController = TextEditingController();
 
   bool _isLoadingQuote = false;
@@ -34,10 +34,8 @@ class _TransferScreenState extends State<TransferScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedAccount = widget.availableAccounts.firstWhere(
-      (a) => a.isActive,
-      orElse: () => widget.availableAccounts.first,
-    );
+    final activeAccounts = widget.availableAccounts.where((a) => a.isActive).toList();
+    if (activeAccounts.isNotEmpty) _selectedAccount = activeAccounts.first;
   }
 
   @override
@@ -243,6 +241,12 @@ class _TransferScreenState extends State<TransferScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!widget.availableAccounts.any((a) => a.isActive)) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Nueva Transferencia')),
+        body: const Center(child: Padding(padding: EdgeInsets.all(24), child: Text('No tienes cuentas activas disponibles para realizar transferencias.'))),
+      );
+    }
     return Scaffold(
       appBar: AppBar(title: const Text('Nueva Transferencia')),
       body: SingleChildScrollView(
