@@ -29,7 +29,7 @@ from app.modules.admin.router import router as admin_router
 def seed_database():
     """
     Inicializa de forma 100% idempotente los datos de demostración para el reto BankOS:
-    - Dos instituciones financieras (tenants) independientes.
+    - Cuatro instituciones financieras colombianas (tenants) independientes.
     - Usuario de prueba (Carlos Mendoza) con credenciales seguras (Argon2).
     - Membresías y roles.
     - Cuentas en múltiples divisas (COP, USD) y una desactivada (soft delete).
@@ -37,26 +37,49 @@ def seed_database():
     """
     db = SessionLocal()
     try:
-        # 1. Tenants
-        tenant1 = db.query(Tenant).filter(Tenant.slug == "cooperativa-futuro").first()
-        if not tenant1:
-            tenant1 = Tenant(
-                name="Cooperativa Financiera Futuro",
-                slug="cooperativa-futuro",
-                status="ACTIVE"
-            )
-            db.add(tenant1)
-            db.flush()
+        # 1. Tenants: bancos reales para la demostración multitenant.
+        # Migramos los tenants de demostración existentes para conservar sus IDs y relaciones.
+        def get_or_migrate_tenant(slug, name, legacy_slug=None):
+            tenant = db.query(Tenant).filter(Tenant.slug == slug).first()
+            if tenant is None and legacy_slug:
+                tenant = db.query(Tenant).filter(Tenant.slug == legacy_slug).first()
+            if tenant is None:
+                tenant = Tenant(name=name, slug=slug, status="ACTIVE")
+                db.add(tenant)
+                db.flush()
+            else:
+                tenant.name = name
+                tenant.slug = slug
+                tenant.status = "ACTIVE"
+            return tenant
 
-        tenant2 = db.query(Tenant).filter(Tenant.slug == "neobanco-agil").first()
-        if not tenant2:
-            tenant2 = Tenant(
-                name="Neobanco Ágil",
-                slug="neobanco-agil",
-                status="ACTIVE"
-            )
-            db.add(tenant2)
-            db.flush()
+        tenant1 = get_or_migrate_tenant("bancolombia", "Bancolombia", "cooperativa-futuro")
+        tenant2 = get_or_migrate_tenant("banco-popular", "Banco Popular", "neobanco-agil")
+        tenant3 = get_or_migrate_tenant("nequi", "Nequi")
+        tenant4 = get_or_migrate_tenant("nu", "Nu")
+
+        # Branding por institución: el dashboard utilizará estas paletas.
+        bank_branding = [
+            (tenant1, "#007A4B", "#FFFFFF", "#19A86B"),  # Bancolombia
+            (tenant2, "#B5121B", "#FFFFFF", "#E34A50"),  # Banco Popular
+            (tenant3, "#DA0081", "#FFFFFF", "#F35BB0"),  # Nequi
+            (tenant4, "#820AD1", "#FFFFFF", "#B66CE6"),  # Nu
+        ]
+        for tenant, primary, secondary, accent in bank_branding:
+            config = db.query(BankConfiguration).filter(
+                BankConfiguration.tenant_id == tenant.id
+            ).first()
+            if config is None:
+                db.add(BankConfiguration(
+                    tenant_id=tenant.id,
+                primary_color=primary,
+                secondary_color=secondary,
+                accent_color=accent,
+            ))
+            else:
+                config.primary_color = primary
+                config.secondary_color = secondary
+                config.accent_color = accent
 
         # Seed de divisas base para la configuración global.
         base_currencies = [
@@ -230,7 +253,7 @@ def seed_database():
             {
                 "id": "acc-tenant2-01",
                 "account_number": "8880001234",
-                "alias": "Cuenta Neobanco Ágil",
+                "alias": "Cuenta Banco Popular",
                 "tenant_id": str(tenant2.id),
                 "user_id": str(uuid.uuid4()),
                 "balance": Decimal("99999999.00"),
