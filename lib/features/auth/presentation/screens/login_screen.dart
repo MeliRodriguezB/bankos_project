@@ -37,6 +37,37 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   String? _errorMessage;
 
+  // Identidad visual de la entidad seleccionada en el login.
+  Color get _bankPrimary {
+    switch (_selectedTenantSlug) {
+      case 'bancolombia':
+        return const Color(0xFF007A4B);
+      case 'banco-popular':
+        return const Color(0xFFB5121B);
+      case 'nequi':
+        return const Color(0xFFDA0081);
+      case 'nu':
+        return const Color(0xFF820AD1);
+      default:
+        return AppTheme.primary;
+    }
+  }
+
+  String get _selectedBankName {
+    switch (_selectedTenantSlug) {
+      case 'bancolombia':
+        return 'Bancolombia';
+      case 'banco-popular':
+        return 'Banco Popular';
+      case 'nequi':
+        return 'Nequi';
+      case 'nu':
+        return 'Nu';
+      default:
+        return 'BankOS';
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -181,11 +212,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppTheme.primary,
+                        color: _bankPrimary,
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.primary.withOpacity(0.2),
+                            color: _bankPrimary.withOpacity(0.2),
                             blurRadius: 16,
                             offset: const Offset(0, 6),
                           ),
@@ -207,7 +238,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 6),
                   const Text(
-                    'Plataforma Bancaria Multitenant',
+                    'Experiencia de $_selectedBankName · BankOS',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
                   ),
@@ -307,7 +338,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 28),
                   ElevatedButton(
                     onPressed: _isLoading ? null : _handleLogin,
-                    style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                    style: ElevatedButton.styleFrom(backgroundColor: _bankPrimary, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),),
                     child: _isLoading
                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
                         : const Text('Iniciar Sesión', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
