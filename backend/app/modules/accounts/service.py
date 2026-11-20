@@ -2,6 +2,7 @@ from decimal import Decimal
 from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app.modules.accounts.models import Account
 from app.modules.accounts.schemas import (
@@ -14,6 +15,9 @@ from app.modules.accounts.schemas import (
 )
 from app.modules.tenants.models import TenantMembership
 from app.modules.users.models import User
+from app.modules.transactions.models import Transaction
+from app.modules.accounts.schemas import TenantAdminCurrencyBalance, TenantAdminTransactionSummary, TenantAdminDashboardResponse
+from app.modules.tenants.models import Tenant
 
 
 class AccountService:
@@ -183,3 +187,79 @@ class AccountService:
             }
             for account, owner_name, owner_email in rows
         ]
+
+
+    @staticmethod
+    def get_tenant_admin_dashboard(db: Session, tenant_id: str) -> TenantAdminDashboardResponse:
+        """Calcula métricas agregadas usando exclusivamente el tenant autenticado."""
+        tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+        if not tenant:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Institución no encontrada.")
+
+        active_memberships = db.query(TenantMembership).filter(
+            TenantMembership.tenant_id == tenant_id,
+            TenantMembership.status == "ACTIVE",
+        ).count()
+
+        total_accounts = db.query(Account).filter(Account.tenant_id == tenant_id).count()
+        active_accounts = db.query(Account).filter(
+            Account.tenant_id == tenant_id, Account.status == "ACTIVE"
+        ).count()
+        inactive_accounts = total_accounts - active_accounts
+
+        balance_rows = db.query(
+            Account.currency,
+            func.sum(Account.balance),
+            func.count(Account.id),
+        ).filter(
+            Account.tenant_id == tenant_id,
+            Account.status == "ACTIVE",
+        ).group_by(Account.currency).order_by(Account.currency).all()
+
+        balances = [
+            TenantAdminCurrencyBalance(
+                currency=currency,
+                total_balance=f"{(total or Decimal('0.00')):.2f}",
+                active_accounts_count=count,
+            )
+            for currency, total, count in balance_rows
+        ]
+
+        transaction_rows = db.query(
+            Transaction.status,
+            Transaction.currency,
+            func.count(Transaction.id),
+            func.sum(Transaction.amount),
+        ).filter(
+            Transaction.tenant_id == tenant_id,
+        ).group_by(
+            Transaction.status, Transaction.currency
+        ).order_by(
+            Transaction.status, Transaction.currency
+        ).all()
+
+        transaction_summary = [
+            TenantAdminTransactionSummary(
+                status=tx_status,
+                currency=currency,
+                count=count,
+                total_amount=f"{(total or Decimal('0.00")):.2f}",
+            )
+            for tx_status, currency, count, total in transaction_rows
+        ]
+
+        transactions_total = db.query(Transaction).filter(
+            Transaction.tenant_id == tenant_id
+        ).count()
+
+        return TenantAdminDashboardResponse(
+            tenant_id=str(tenant.id),
+            tenant_name=tenant.name,
+            active_memberships=active_memberships,
+            total_accounts=total_accounts,
+            active_accounts=active_accounts,
+            inactive_accounts=inactive_accounts,
+            balances_by_currency=balances,
+            transactions_total=transactions_total,
+            transactions_by_status_currency=transaction_summary,
+        )
