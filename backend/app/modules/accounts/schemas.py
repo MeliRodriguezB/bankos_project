@@ -102,6 +102,7 @@ class TenantAdminCurrencyBalance(BaseModel):
 class TenantAdminTransactionSummary(BaseModel):
     """Conteo y volumen de operaciones agrupados por estado y divisa."""
     status: str
+    type: str
     count: int
     currency: str
     total_amount: str
