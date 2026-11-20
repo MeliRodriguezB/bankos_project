@@ -57,9 +57,9 @@ class MockDashboardRepository implements DashboardRepository {
     return DashboardModel(
       userId: 'usr-dev-101',
       userName: 'Carlos Mendoza',
-      userEmail: 'carlos.mendoza@banco-demo.com',
+      userEmail: 'carlos@fintech.com',
       tenantId: 'tenant-coop-01',
-      tenantName: 'Cooperativa Financiera Futuro',
+      tenantName: 'Bancolombia',
       balancesByCurrency: [
         BalanceSummaryModel(
           currency: 'COP',
