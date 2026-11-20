@@ -21,6 +21,7 @@ from app.modules.transactions.models import Transaction
 from app.modules.auth.router import router as auth_router
 from app.modules.accounts.router import router as accounts_router
 from app.modules.transactions.router import router as transactions_router
+from app.modules.users.router import router as users_router
 
 
 def seed_database():
@@ -317,3 +318,4 @@ def health_check():
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(accounts_router, prefix="/api/v1")
 app.include_router(transactions_router, prefix="/api/v1")
+app.include_router(users_router, prefix="/api/v1")
