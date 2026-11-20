@@ -68,6 +68,7 @@ jobs:
         run: |
           python - <<'PY'
           import json
+          from urllib.error import HTTPError
           from urllib.request import Request, urlopen
 
           base_url = "http://localhost:8000/api/v1"
@@ -84,8 +85,12 @@ jobs:
                   headers=headers,
                   method=request_method,
               )
-              with urlopen(req, timeout=10) as response:
-                  return json.loads(response.read())
+              try:
+                  with urlopen(req, timeout=10) as response:
+                      return json.loads(response.read())
+              except HTTPError as error:
+                  print(f"Request {path} failed ({error.code}): {error.read().decode()}")
+                  raise
 
           scenarios = [
               ("cooperativa-futuro", "1002348911", "8880001234", "1000000.00"),
@@ -133,6 +138,10 @@ jobs:
               assert current["webhook_url"] == config["webhook_url"]
           print("Customer/admin roles and independent configuration passed for both tenants.")
           PY
+
+      - name: Dump Compose logs on failure
+        if: failure()
+        run: docker compose -f ../docker-compose.yml logs api db redis
 
       - name: Verify PostgreSQL transaction audit is append-only
         run: |
