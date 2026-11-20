@@ -6,6 +6,7 @@ import '../../data/models/balance_summary_model.dart';
 class BalanceHeaderCard extends StatelessWidget {
   final String userName;
   final String tenantName;
+  final Color bankColor;
   final List<BalanceSummaryModel> balances;
   final bool isBalanceHidden;
   final VoidCallback onToggleVisibility;
@@ -14,6 +15,7 @@ class BalanceHeaderCard extends StatelessWidget {
     super.key,
     required this.userName,
     required this.tenantName,
+    required this.bankColor,
     required this.balances,
     required this.isBalanceHidden,
     required this.onToggleVisibility,
@@ -24,10 +26,10 @@ class BalanceHeaderCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           colors: [
-            Color(0xFF0F172A), // Slate 900
-            Color(0xFF1E293B), // Slate 800
+            bankColor.withOpacity(0.95),
+            const Color(0xFF1E293B), // mantiene contraste y profundidad
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -35,7 +37,7 @@ class BalanceHeaderCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withOpacity(0.15),
+            color: bankColor.withOpacity(0.18),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -60,7 +62,7 @@ class BalanceHeaderCard extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.account_balance, color: AppTheme.accent, size: 14),
+                    Icon(Icons.account_balance, color: bankColor, size: 14),
                     const SizedBox(width: 6),
                     Text(
                       tenantName,
