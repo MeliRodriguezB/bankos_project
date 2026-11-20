@@ -83,3 +83,10 @@ class DashboardResponse(BaseModel):
     tenant: DashboardTenant
     balances_by_currency: list[CurrencyBalanceSummary]
     accounts: list[AccountResponse]
+
+
+class TenantAdminAccountResponse(AccountResponse):
+    """Cuenta institucional con datos básicos del titular, visible para ADMIN del tenant."""
+    user_id: str
+    owner_name: str
+    owner_email: str
