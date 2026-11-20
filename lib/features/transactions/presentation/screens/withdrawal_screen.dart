@@ -173,7 +173,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
                 validator: (value) {
                   final amount = double.tryParse(value?.trim() ?? '');
                   if (amount == null || amount <= 0) return 'Ingresa un monto válido mayor a cero.';
-                  if (_selectedAccount != null && amount > (double.tryParse(_selectedAccount!.balance) ?? 0) {
+                  if (_selectedAccount != null && amount > (double.tryParse(_selectedAccount!.balance) ?? 0)) {
                     return 'El monto supera el saldo disponible.';
                   }
                   return null;
