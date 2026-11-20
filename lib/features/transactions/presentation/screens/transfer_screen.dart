@@ -290,7 +290,10 @@ class _TransferScreenState extends State<TransferScreen> {
                             ))
                         .toList(),
                     onChanged: (val) {
-                      if (val != null) setState(() => _selectedAccount = val);
+                      if (val != null) setState(() {
+                        _selectedAccount = val;
+                        _currentIdempotencyKey = null;
+                      });
                     },
                   ),
                 ),
@@ -302,6 +305,7 @@ class _TransferScreenState extends State<TransferScreen> {
               const SizedBox(height: 6),
               TextFormField(
                 controller: _destinationController,
+                onChanged: (_) => _currentIdempotencyKey = null,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
                   hintText: 'Ej. 1002348922',
@@ -318,6 +322,7 @@ class _TransferScreenState extends State<TransferScreen> {
               const SizedBox(height: 6),
               TextFormField(
                 controller: _amountController,
+                onChanged: (_) => _currentIdempotencyKey = null,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(
                   prefixText: '\$ ',
@@ -340,6 +345,7 @@ class _TransferScreenState extends State<TransferScreen> {
               const SizedBox(height: 6),
               TextFormField(
                 controller: _descController,
+                onChanged: (_) => _currentIdempotencyKey = null,
                 decoration: InputDecoration(
                   hintText: 'Ej. Pago de arriendo',
                   filled: true,
