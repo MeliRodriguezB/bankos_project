@@ -21,7 +21,7 @@ void main() {
     );
 
     expect(find.text('BankOS'), findsOneWidget);
-    expect(find.text('Plataforma Bancaria Multitenant'), findsOneWidget);
+    expect(find.text('Experiencia de Bancolombia · BankOS'), findsOneWidget);
     expect(find.text('Institución Financiera (Tenant)'), findsOneWidget);
     expect(find.text('Iniciar Sesión'), findsOneWidget);
   });
