@@ -90,7 +90,7 @@ Valida las credenciales contra el tenant correspondiente utilizando hash de cont
 #### Solicitud (`application/json`)
 ```json
 {
-  "tenant_slug": "cooperativa-futuro",
+  "tenant_slug": "bancolombia",
   "email": "carlos@fintech.com",
   "password": "contraseña_segura"
 }
@@ -137,6 +137,47 @@ Obtiene los datos del perfil activo directamente decodificados desde el JWT.
 
 ---
 
+### 5.3. Verificar Administrador Global
+
+Verifica el privilegio de administración global directamente contra la base de datos. Un rol `ADMIN` de una institución no equivale a `PlatformAdmin`.
+
+- **Método:** `GET`
+- **Ruta:** `/api/v1/users/me/platform-admin`
+- **Autenticación:** `Bearer <JWT>`
+
+#### Respuesta
+```json
+{ "is_platform_admin": true }
+```
+
+### 5.4. Consultar Branding del Tenant
+
+Devuelve la identidad visual del tenant asociado al token actual. El endpoint no acepta IDs de otros bancos, evitando consultas cruzadas.
+
+- **Método:** `GET`
+- **Ruta:** `/api/v1/users/me/bank-branding`
+- **Autenticación:** `Bearer <JWT>`
+
+#### Respuesta
+```json
+{
+  "tenant_name": "Bancolombia",
+  "primary_color": "#007A4B",
+  "secondary_color": "#FFFFFF",
+  "accent_color": "#19A86B"
+}
+```
+
+### 5.5. Tenants de Demostración
+
+| Institución | `tenant_slug` |
+|---|---|
+| Bancolombia | `bancolombia` |
+| Banco Popular | `banco-popular` |
+| Nequi | `nequi` |
+| Nu | `nu` |
+
+---
 ## 6. Módulo de Cuentas y Dashboard (`/accounts`, `/dashboard`)
 
 ### 6.1. Consultar Resumen Financiero (Dashboard)
