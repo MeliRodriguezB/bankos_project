@@ -43,9 +43,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String? _errorMessage;
   String? _correlationId;
   bool _isBalanceHidden = false;
+  String? _brandingPrimary;
 
   // Paleta local por tenant mientras el endpoint de branding se integra.
   Color get _bankColor {
+    final configured = _brandingPrimary;
+    if (configured != null && configured.startsWith('#') && configured.length == 7) {
+      final parsed = int.tryParse(configured.substring(1), radix: 16);
+      if (parsed != null) return Color(0xFF000000 | parsed);
+    }
     final tenant = (_dashboardData?.tenantName ?? '').toLowerCase();
     if (tenant.contains('bancolombia')) return const Color(0xFF007A4B);
     if (tenant.contains('popular')) return const Color(0xFFB5121B);
@@ -67,6 +73,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _useMock = !_useMock;
       _repository = _useMock ? MockDashboardRepository() : ApiDashboardRepository();
       _txRepository = _useMock ? MockTransactionRepository() : ApiTransactionRepository();
+      _brandingPrimary = null;
       _isLoading = true;
     });
     _fetchDashboard();
@@ -93,9 +100,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     try {
       final data = await _repository.getDashboard();
+      String? brandingColor;
+      if (!_useMock) {
+        try {
+          final branding = await ApiClient().get('/users/me/bank-branding') as Map<String, dynamic>;
+          brandingColor = branding['primary_color']?.toString();
+        } catch (_) {
+          // El branding es opcional para renderizar; fallback a la paleta por nombre.
+        }
+      }
       if (mounted) {
         setState(() {
           _dashboardData = data;
+          _brandingPrimary = brandingColor;
           _isLoading = false;
         });
       }
