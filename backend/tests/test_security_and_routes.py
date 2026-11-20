@@ -75,3 +75,30 @@ def test_transaction_pin_hash_is_not_plaintext():
     assert hashed != "0427"
     assert verify_password("0427", hashed)
     assert not verify_password("1234", hashed)
+
+def test_production_rejects_simulated_deposits():
+    from pydantic import ValidationError
+    from app.core.config import Settings
+
+    try:
+        Settings(
+            ENVIRONMENT="production",
+            SECRET_KEY="production-secret-key-with-more-than-32-characters",
+            SIMULATED_DEPOSITS_ENABLED=True,
+        )
+    except ValidationError:
+        pass
+    else:
+        raise AssertionError("Los depósitos simulados deben bloquearse en producción")
+
+
+def test_production_accepts_deposits_disabled():
+    from app.core.config import Settings
+
+    config = Settings(
+        ENVIRONMENT="production",
+        SECRET_KEY="production-secret-key-with-more-than-32-characters",
+        SIMULATED_DEPOSITS_ENABLED=False,
+    )
+    assert config.SIMULATED_DEPOSITS_ENABLED is False
+
