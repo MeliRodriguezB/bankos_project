@@ -33,6 +33,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+      - name: Validate root Docker Compose configuration
+        run: docker compose -f ../docker-compose.yml config --quiet
+      - name: Compile backend and migration modules
+        run: python -m compileall -q app migrations
       - name: Run backend tests
         env:
           ENVIRONMENT: test
