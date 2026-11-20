@@ -2,7 +2,7 @@
 
 BankOS es una plataforma moderna de **Banking-as-a-Service (BaaS)** con arquitectura cliente-servidor, diseñada para soportar múltiples instituciones financieras (cooperativas, neobancos y fintechs) de forma aislada, segura y escalable.
 
-El cliente móvil y web está construido con **Flutter**, y el backend de alta concurrencia expone una API REST construida con **FastAPI**, persistencia en **PostgreSQL 16** y soporte de caché/idempotencia en **Redis 7**.
+El cliente móvil y web está construido con **Flutter**, y el backend de alta concurrencia expone una API REST construida con **FastAPI**, persistencia en **PostgreSQL 16**. Redis 7 está provisionado en Compose, pero su integración funcional queda pendiente; la idempotencia transaccional actual se garantiza en PostgreSQL.
 
 ---
 
@@ -37,7 +37,7 @@ El proyecto cuenta con la integración de las 3 Personas de desarrollo:
 - **Backend:** Python 3.12, FastAPI, SQLAlchemy 2.0, Pydantic v2.
 - **Seguridad:** Argon2id, PyJWT.
 - **Base de Datos:** PostgreSQL 16 Alpine (`Numeric(18, 2)` para precisión monetaria exacta).
-- **Caché y Mensajería:** Redis 7 Alpine.
+- **Servicio auxiliar provisionado:** Redis 7 Alpine (sin uso activo en el flujo de transacciones actual).
 - **Contenedores:** Docker y Docker Compose.
 
 ---
