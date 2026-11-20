@@ -29,6 +29,21 @@ El proyecto cuenta con la integración de las 3 Personas de desarrollo:
 
 ---
 
+## 🏦 Instituciones de demostración
+
+La base de datos de demostración se inicializa con cuatro tenants colombianos:
+
+| Tenant | Slug | Identidad visual |
+|---|---|---|
+| Bancolombia | `bancolombia` | Verde y blanco |
+| Banco Popular | `banco-popular` | Rojo y blanco |
+| Nequi | `nequi` | Magenta |
+| Nu | `nu` | Violeta |
+
+El selector del login permite elegir el tenant. El backend valida la membresía activa del usuario para la institución seleccionada. El dashboard aplica una paleta contextual a la cabecera de saldo, accesos rápidos y tarjetas de cuenta. El seed conserva los saldos y estados de las cuentas existentes cuando se reinicia el backend.
+
+El acceso al panel de administración global se confirma con el registro `PlatformAdmin` en backend; el rol `ADMIN` de un tenant no concede privilegios globales.
+
 ## 🛠️ Tecnologías y Stack
 
 - **Frontend:** Flutter 3.24+ (Dart 3.5+), Material 3, soporte Web y Desktop.
