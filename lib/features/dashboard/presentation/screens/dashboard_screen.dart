@@ -53,8 +53,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (parsed != null) return Color(0xFF000000 | parsed);
     }
     final tenant = (_dashboardData?.tenantName ?? '').toLowerCase();
-    if (tenant.contains('bancolombia')) return const Color(0xFF007A4B);
-    if (tenant.contains('popular')) return const Color(0xFFB5121B);
+    if (tenant.contains('bancolombia')) return const Color(0xFFFFD600);
+    if (tenant.contains('popular')) return const Color(0xFF00843D);
     if (tenant.contains('nequi')) return const Color(0xFFDA0081);
     if (tenant.contains('nu')) return const Color(0xFF820AD1);
     return AppTheme.accent;
