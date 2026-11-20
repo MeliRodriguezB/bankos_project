@@ -145,7 +145,7 @@ def bank_metrics(bank_id: UUID, db: Session = Depends(get_db), _: dict = Depends
 
 @router.get("/accounts")
 def list_accounts(db: Session = Depends(get_db), _: dict = Depends(require_platform_admin)):
-    rows = db.query(Account, Tenant.name, User.full_name, User.email).join(Tenant, cast(Tenant.id, String) == Account.tenant_id).outerjoin(User, User.id == Account.user_id).order_by(Account.created_at.desc()).limit(500).all()
+    rows = db.query(Account, Tenant.name, User.full_name, User.email).join(Tenant, cast(Tenant.id, String) == Account.tenant_id).outerjoin(User, cast(User.id, String) == Account.user_id).order_by(Account.created_at.desc()).limit(500).all()
     return [{
         "id": a.id, "account_number_masked": a.account_number_masked, "alias": a.alias or "Cuenta",
         "bank": bank_name, "tenant_id": a.tenant_id, "user_id": a.user_id,
