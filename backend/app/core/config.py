@@ -22,6 +22,16 @@ class Settings(BaseSettings):
     # antes de implementar autenticación o desplegar en producción
     SECRET_KEY: str = "bankos-development-secret-change-before-production"
 
+    # Orígenes autorizados para consumir la API; puede sobrescribirse desde el entorno.
+    CORS_ORIGINS: list[str] = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:8080",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:8080",
+    ]
+
     # Tiempo de duración del token de acceso, expresado en minutos
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
