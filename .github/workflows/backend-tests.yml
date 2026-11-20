@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - develop
-      - fix/security-and-api-audit
+      - 'fix/**'
   pull_request:
     branches:
       - develop
