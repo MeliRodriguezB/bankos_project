@@ -239,3 +239,76 @@ def test_tenant_config_response_serializes_uuid_as_json_string():
     )
 
     assert response.model_dump(mode="json")["id"] == str(tenant_id)
+
+
+
+def test_transaction_audit_uses_the_same_correlation_id_as_response(monkeypatch):
+    from datetime import datetime, timezone
+
+    from fastapi.testclient import TestClient
+
+    from app.core.dependencies import get_current_user, get_db
+    from app.main import app
+    from app.modules.transactions.schemas import TransactionResponse
+    from app.modules.transactions.service import TransactionService
+
+    captured_ids = []
+
+    def fake_transfer(**kwargs):
+        correlation_id = kwargs["correlation_id"]
+        captured_ids.append(correlation_id)
+        return TransactionResponse(
+            id=f"tx-{len(captured_ids)}",
+            type="TRANSFER",
+            amount="10.00",
+            currency="COP",
+            fee_amount="0.00",
+            exchange_rate="1.000000",
+            status="COMPLETED",
+            idempotency_key=kwargs["idempotency_key"],
+            correlation_id=correlation_id,
+            created_at=datetime.now(timezone.utc),
+        )
+
+    monkeypatch.setattr(
+        TransactionService, "process_transfer", staticmethod(fake_transfer)
+    )
+    monkeypatch.setitem(
+        app.dependency_overrides,
+        get_current_user,
+        lambda: {
+            "user_id": "demo-user",
+            "tenant_id": "demo-tenant",
+            "roles": ["CUSTOMER"],
+        },
+    )
+    monkeypatch.setitem(app.dependency_overrides, get_db, lambda: None)
+
+    payload = {
+        "source_account_id": "source-account",
+        "destination_account_number": "1000000002",
+        "amount": "10.00",
+        "currency": "COP",
+        "pin": "1234",
+    }
+    with TestClient(app) as client:
+        generated = client.post(
+            "/api/v1/transactions/transfers",
+            json=payload,
+            headers={"Idempotency-Key": "correlation-generated-001"},
+        )
+        supplied = client.post(
+            "/api/v1/transactions/transfers",
+            json=payload,
+            headers={
+                "Idempotency-Key": "correlation-supplied-001",
+                "X-Correlation-ID": "bankos-correlation-002",
+            },
+        )
+
+    assert generated.status_code == 201
+    assert supplied.status_code == 201
+    assert generated.headers["X-Correlation-ID"] == captured_ids[0]
+    assert generated.json()["correlation_id"] == captured_ids[0]
+    assert supplied.headers["X-Correlation-ID"] == "bankos-correlation-002"
+    assert supplied.json()["correlation_id"] == "bankos-correlation-002"
