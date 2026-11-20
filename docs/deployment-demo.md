@@ -6,10 +6,9 @@ La versión web publicada desde esta rama es una **demostración de interfaz con
 
 ## Acceso a la demostración
 
-1. Abre la URL de GitHub Pages del repositorio.
-2. En la pantalla de acceso, cambia el selector superior de **API** a **MOCK**.
+1. Abre la URL de GitHub Pages del repositorio. La compilación publicada inicia automáticamente en modo **MOCK**.
 3. Ingresa cualquier correo de demostración y la contraseña `123456`.
-4. En el dashboard, cambia también el selector de **API** a **MOCK** para cargar cuentas e historial simulados.
+4. El dashboard también carga automáticamente las cuentas e historial simulados. Puedes cambiar manualmente entre MOCK y API desde el selector.
 5. Para acciones simuladas que soliciten PIN, utiliza `1234`.
 
 Los saldos, cuentas, tasas, depósitos, retiros y transferencias de este modo son datos ficticios y solo sirven para demostrar la interfaz y los flujos.
