@@ -23,12 +23,14 @@ class BalanceHeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Amarillo de Bancolombia se oscurece solo en el fondo para mantener legibles los textos blancos.
+    final gradientBankColor = bankColor.value == const Color(0xFFFFD600).value ? const Color(0xFFB38B00) : bankColor;
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            bankColor.withOpacity(0.95),
+            gradientBankColor.withOpacity(0.95),
             const Color(0xFF1E293B), // mantiene contraste y profundidad
           ],
           begin: Alignment.topLeft,
