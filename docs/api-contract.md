@@ -172,10 +172,10 @@ Devuelve la identidad visual del tenant asociado al token actual. El endpoint no
 
 | Institución | `tenant_slug` |
 |---|---|
-| Bancolombia | `bancolombia` |
-| Banco Popular | `banco-popular` |
-| Nequi | `nequi` |
-| Nu | `nu` |
+| Bancolombia | `bancolombia` | Amarillo `#FFD600` |
+| Banco Popular | `banco-popular` | Verde `#00843D` |
+| Nequi | `nequi` | Magenta `#DA0081` |
+| Nu | `nu` | Violeta `#820AD1` |
 
 ---
 ## 6. Módulo de Cuentas y Dashboard (`/accounts`, `/dashboard`)
