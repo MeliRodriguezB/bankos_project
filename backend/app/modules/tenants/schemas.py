@@ -53,14 +53,17 @@ class TenantConfigUpdate(BaseModel):
     def validate_exchange_rates(cls, values: dict[str, Decimal] | None) -> dict[str, Decimal] | None:
         if values is None:
             return values
-        if any(
-            len(pair.split("/")) != 2
-            or any(len(currency) != 3 for currency in pair.split("/"))
-            or rate <= 0
-            for pair, rate in values.items()
-        ):
-            raise ValueError("Las tasas deben usar pares MONEDA/MONEDA y valores positivos.")
-        return values
+        normalized = {}
+        for pair, rate in values.items():
+            currencies = [currency.upper() for currency in pair.split("/")]
+            if (
+                len(currencies) != 2
+                or any(len(currency) != 3 or not currency.isalpha() for currency in currencies)
+                or rate <= 0
+            ):
+                raise ValueError("Las tasas deben usar pares MONEDA/MONEDA y valores positivos.")
+            normalized["/".join(currencies)] = rate
+        return normalized
 
 
 class TenantConfigResponse(BaseModel):
