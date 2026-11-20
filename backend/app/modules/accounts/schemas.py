@@ -90,3 +90,31 @@ class TenantAdminAccountResponse(AccountResponse):
     user_id: str
     owner_name: str
     owner_email: str
+
+
+class TenantAdminCurrencyBalance(BaseModel):
+    """Saldo institucional agrupado por moneda; nunca mezcla divisas."""
+    currency: str
+    total_balance: str
+    active_accounts_count: int
+
+
+class TenantAdminTransactionSummary(BaseModel):
+    """Conteo y volumen de operaciones agrupados por estado y divisa."""
+    status: str
+    count: int
+    currency: str
+    total_amount: str
+
+
+class TenantAdminDashboardResponse(BaseModel):
+    """Indicadores agregados exclusivos del tenant del administrador."""
+    tenant_id: str
+    tenant_name: str
+    active_memberships: int
+    total_accounts: int
+    active_accounts: int
+    inactive_accounts: int
+    balances_by_currency: list[TenantAdminCurrencyBalance]
+    transactions_total: int
+    transactions_by_status_currency: list[TenantAdminTransactionSummary]
