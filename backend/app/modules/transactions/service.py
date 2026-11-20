@@ -54,7 +54,13 @@ class TransactionService:
         to_curr = to_currency.upper()
         if from_curr == to_curr:
             return Decimal("1.000000")
-        return cls.EXCHANGE_RATES.get((from_curr, to_curr), Decimal("1.000000"))
+        rate = cls.EXCHANGE_RATES.get((from_curr, to_curr))
+        if rate is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"No existe una tasa de cambio configurada para {from_curr} -> {to_curr}.",
+            )
+        return rate
 
     @classmethod
     def calculate_quote(
