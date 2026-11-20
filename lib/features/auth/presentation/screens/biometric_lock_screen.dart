@@ -1,8 +1,12 @@
-import 'dart:convert';\n\nimport 'package:flutter/material.dart';
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
 import '../../../../core/network/session_storage.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/security/biometric_service.dart';
-import 'login_screen.dart';\nimport '../../../dashboard/presentation/screens/dashboard_screen.dart';\nimport '../../../admin/presentation/screens/admin_dashboard_screen.dart';
+import 'login_screen.dart';
+import '../../../dashboard/presentation/screens/dashboard_screen.dart';
+import '../../../admin/presentation/screens/admin_dashboard_screen.dart';
 
 /// Screen shown when a saved session is protected by device biometrics.
 class BiometricLockScreen extends StatefulWidget {
@@ -17,14 +21,32 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
   bool _busy = false;
   String? _error;
 
+  bool _hasAdminRole(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return false;
+      final payload = jsonDecode(
+        utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
+      ) as Map<String, dynamic>;
+      final roles = payload['roles'] as List<dynamic>? ?? [];
+      return roles.map((r => r.toString().toUpperCase()).contains('ADMIN');
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<void> _unlock() async {
+    if (_busy) return;
     setState(() { _busy = true; _error = null; });
     final success = await _biometric.authenticate();
     if (!mounted) return;
     setState(() => _busy = false);
     if (success) {
+      final token = await SessionStorage().readToken();
+      if (!mounted) return;
+      final isAdmin = _hasAdminRole(token ?? '');
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const SessionGateDestination()),
+        MaterialPageRoute(builder: (_) => isAdmin ? const AdminDashboardScreen() : const DashboardScreen()),
       );
     } else {
       setState(() => _error = 'No fue posible validar la biometría. Inténtalo de nuevo.');
@@ -66,7 +88,7 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: _busy ? null : _unlock,
-            icon: _busy ? const SizedBox(width: 18,height: 18,child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.lock_open),
+            icon: _busy ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.lock_open),
             label: const Text('Desbloquear'),
           ),
           TextButton(onPressed: _logout, child: const Text('Cerrar sesión')),
@@ -75,4 +97,3 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
     ),
   );
 }
-
