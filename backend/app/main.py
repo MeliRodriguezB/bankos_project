@@ -329,11 +329,10 @@ def seed_database():
         for acc_data in accounts_to_seed:
             existing = db.query(Account).filter(Account.id == acc_data["id"]).first()
             if existing:
+                # Migración de tenant/titular para las cuentas demo; no sobrescribir
+                # saldos ni estado para preservar operaciones hechas por el usuario.
                 existing.tenant_id = acc_data["tenant_id"]
                 existing.user_id = acc_data["user_id"]
-                existing.balance = acc_data["balance"]
-                existing.status = acc_data["status"]
-                existing.currency = acc_data["currency"]
             else:
                 db.add(Account(**acc_data))
 
