@@ -174,7 +174,10 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
                           child: Text('${a.displayName} • ${a.accountNumberMasked}'),
                         ))
                     .toList(),
-                onChanged: (account) => setState(() => _selectedAccount = account),
+                onChanged: (account) => setState(() {
+                  _selectedAccount = account;
+                  _idempotencyKey = null; // Una cuenta distinta debe generar una nueva operación.
+                }),
                 decoration: const InputDecoration(border: OutlineInputBorder()),
               ),
               if (_selectedAccount != null) ...[
@@ -188,6 +191,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
               const SizedBox(height: 6),
               TextFormField(
                 controller: _amountController,
+                onChanged: (_) => _idempotencyKey = null, // Cambiar el monto invalida la clave anterior.
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(
                   prefixText: '\$ ',
@@ -211,6 +215,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
               const SizedBox(height: 6),
               TextFormField(
                 controller: _descriptionController,
+                onChanged: (_) => _idempotencyKey = null, // El concepto también forma parte del intento.
                 maxLength: 200,
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),
