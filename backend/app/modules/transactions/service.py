@@ -76,13 +76,12 @@ class TransactionService:
         if from_curr == to_curr:
             return Decimal("1.000000")
 
-        configured_rates = tenant.exchange_rates if tenant else {}
-        configured_value = configured_rates.get(f"{from_curr}/{to_curr}")
-        rate = (
-            Decimal(str(configured_value))
-            if configured_value is not None
-            else cls.EXCHANGE_RATES.get((from_curr, to_curr))
-        )
+        pair = f"{from_curr}/{to_curr}"
+        if tenant is not None:
+            configured_value = (tenant.exchange_rates or {}).get(pair)
+            rate = Decimal(str(configured_value)) if configured_value is not None else None
+        else:
+            rate = cls.EXCHANGE_RATES.get((from_curr, to_curr))
         if rate is None:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
