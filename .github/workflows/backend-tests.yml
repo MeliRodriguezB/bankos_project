@@ -43,3 +43,24 @@ jobs:
           DATABASE_URL: sqlite:///./test.db
           SECRET_KEY: test-secret-key-with-at-least-32-characters
         run: PYTHONPATH=. pytest -q
+
+      - name: Start the root Docker Compose stack
+        run: docker compose -f ../docker-compose.yml up --build -d
+
+      - name: Verify API health and OpenAPI v1
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://localhost:8000/health; then
+              break
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              docker compose -f ../docker-compose.yml logs api db redis
+              exit 1
+            fi
+            sleep 2
+          done
+          curl --fail --silent http://localhost:8000/openapi.json | python -c "import json, sys; spec=json.load(sys.stdin); assert spec['info']['version'] == '1.0.0'; assert '/api/v1/transactions/transfers' in spec['paths']"
+
+      - name: Stop the root Docker Compose stack
+        if: always()
+        run: docker compose -f ../docker-compose.yml down -v
