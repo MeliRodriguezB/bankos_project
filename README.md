@@ -6,7 +6,7 @@ El cliente móvil y web está construido con **Flutter**, y el backend de alta c
 
 ---
 
-## 🚀 Estado del Proyecto: Implementado y Validado (v1.0.0)
+## 🚀 Estado del Proyecto: Implementación en curso — validación final pendiente
 
 El proyecto cuenta con la integración de las 3 Personas de desarrollo:
 1. **Persona 1 (Autenticación e Inquilinos):**
