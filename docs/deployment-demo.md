@@ -8,7 +8,7 @@ La versión web publicada desde esta rama es una **demostración de interfaz con
 
 1. Abre la URL de GitHub Pages del repositorio. La compilación publicada inicia automáticamente en modo **MOCK**.
 2. Ingresa cualquier correo de demostración y la contraseña `123456`.
-3. El dashboard carga automáticamente las cuentas e historial simulados. Puedes cambiar manualmente entre MOCK y API desde el selector.
+3. El dashboard carga automáticamente las cuentas e historial simulados. La publicación mantiene el modo MOCK bloqueado: no muestra un selector para conectarse a una API.
 4. Para acciones simuladas que soliciten PIN, utiliza `1234`.
 
 Los saldos, cuentas, tasas, depósitos, retiros y transferencias de este modo son datos ficticios y solo sirven para demostrar la interfaz y los flujos.
@@ -25,4 +25,4 @@ La URL solo estará activa después de que el workflow termine correctamente y G
 
 ## Backend
 
-Esta publicación no despliega FastAPI ni PostgreSQL. Para una versión conectada se requiere un servicio backend accesible por HTTPS, una base de datos persistente, secretos configurados en el proveedor y una URL API compilada con `--dart-define=API_BASE_URL=...`. El backend actual sigue siendo un prototipo y no está autorizado para custodiar dinero real.
+Esta publicación no despliega FastAPI ni PostgreSQL. El modo MOCK está forzado en `SessionGate`, login y dashboard; no existe una ruta de la interfaz publicada para cambiar a API. Para una versión conectada se requiere un servicio backend accesible por HTTPS, una base de datos persistente, secretos configurados en el proveedor y una compilación distinta con `--dart-define=API_BASE_URL=...`. El backend actual sigue siendo un prototipo y no está autorizado para custodiar dinero real.

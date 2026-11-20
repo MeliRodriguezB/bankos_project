@@ -44,6 +44,15 @@ jobs:
       - name: Build web demo
         run: flutter build web --release --base-href "/bankos_project/" --dart-define=BANKOS_DEMO_MODE=true
 
+      # Keep a downloadable build even when the repository Pages setting is not enabled.
+      - name: Upload MOCK web build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bankos-web-mock-demo
+          path: build/web
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 

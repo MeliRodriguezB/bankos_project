@@ -56,6 +56,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _toggleRepositorySource() {
+    if (const bool.fromEnvironment('BANKOS_DEMO_MODE')) return;
     setState(() {
       _useMock = !_useMock;
       _repository = _useMock ? MockDashboardRepository() : ApiDashboardRepository();
@@ -151,26 +152,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
         actions: [
-          // Switch Mock / Real API
-          Tooltip(
-            message: _useMock ? 'Cambiar a Backend FastAPI' : 'Cambiar a Datos Mock',
-            child: TextButton.icon(
-              onPressed: _toggleRepositorySource,
-              icon: Icon(
-                _useMock ? Icons.cloud_off : Icons.cloud_done,
-                size: 16,
-                color: _useMock ? Colors.amber.shade800 : AppTheme.success,
+          if (const bool.fromEnvironment('BANKOS_DEMO_MODE'))
+            const Padding(
+              padding: EdgeInsets.only(right: 12),
+              child: Center(
+                child: Text(
+                  'MOCK DEMO',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.amber),
+                ),
               ),
-              label: Text(
-                _useMock ? 'MOCK' : 'API',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
+            )
+          else
+            Tooltip(
+              message: _useMock ? 'Cambiar a Backend FastAPI' : 'Cambiar a Datos Mock',
+              child: TextButton.icon(
+                onPressed: _toggleRepositorySource,
+                icon: Icon(
+                  _useMock ? Icons.cloud_off : Icons.cloud_done,
+                  size: 16,
                   color: _useMock ? Colors.amber.shade800 : AppTheme.success,
+                ),
+                label: Text(
+                  _useMock ? 'MOCK' : 'API',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: _useMock ? Colors.amber.shade800 : AppTheme.success,
+                  ),
                 ),
               ),
             ),
-          ),
           IconButton(
             icon: const Icon(Icons.logout_rounded),
             tooltip: 'Cerrar Sesión',

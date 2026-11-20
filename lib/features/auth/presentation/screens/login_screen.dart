@@ -53,6 +53,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _toggleMock() {
+    if (const bool.fromEnvironment('BANKOS_DEMO_MODE')) return;
     setState(() {
       _useMock = !_useMock;
       _repository = _useMock ? MockAuthRepository() : ApiAuthRepository(apiClient: _apiClient);
@@ -136,6 +137,17 @@ class _LoginScreenState extends State<LoginScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
+          if (const bool.fromEnvironment('BANKOS_DEMO_MODE'))
+            const Padding(
+              padding: EdgeInsets.only(right: 12),
+              child: Center(
+                child: Text(
+                  'MOCK DEMO',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.amber),
+                ),
+              ),
+            )
+          else
           TextButton.icon(
             onPressed: _toggleMock,
             icon: Icon(

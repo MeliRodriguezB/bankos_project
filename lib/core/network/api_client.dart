@@ -154,7 +154,8 @@ class ApiClient {
         if (errObj is Map<String, dynamic>) {
           errorMessage = errObj['message']?.toString() ?? errorMessage;
           errorCode = errObj['code']?.toString();
-          correlationId = errObj['correlation_id']?.toString();
+          correlationId = errObj['correlation_id']?.toString() ??
+              response.headers['x-correlation-id'];
         }
       }
     }

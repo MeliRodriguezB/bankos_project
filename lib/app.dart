@@ -56,6 +56,11 @@ class _SessionGateState extends State<SessionGate> {
 
   Future<Widget> _restoreSession() async {
     final storage = SessionStorage();
+    if (const bool.fromEnvironment('BANKOS_DEMO_MODE')) {
+      await storage.clearToken();
+      ApiClient.setGlobalAuthToken(null);
+      return const LoginScreen();
+    }
     final token = await storage.readToken();
     if (token == null || token.isEmpty || !_isTokenNotExpired(token)) {
       await storage.clearToken();
