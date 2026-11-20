@@ -5,9 +5,6 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'core/network/api_client.dart';
 import 'core/network/session_storage.dart';
-import 'core/security/biometric_service.dart';
-import 'features/auth/presentation/screens/biometric_lock_screen.dart';
-import 'core/security/biometric_service.dart';
 import 'features/auth/presentation/screens/biometric_lock_screen.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
