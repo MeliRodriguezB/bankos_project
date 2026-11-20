@@ -1,6 +1,5 @@
 """Add institution-level transfer policies and webhook configuration."""
 from alembic import op
-import sqlalchemy as sa
 
 revision = "20261120_tenant_config"
 down_revision = "20261120_pin"
@@ -9,70 +8,48 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "tenants",
-        sa.Column(
-            "max_transfer_amount",
-            sa.Numeric(18, 2),
-            nullable=False,
-            server_default=sa.text("5000000.00"),
-        ),
-    )
-    op.add_column(
-        "tenants",
-        sa.Column(
-            "transfer_fees",
-            sa.JSON(),
-            nullable=False,
-            server_default=sa.text("""'{"COP":"1500.00","USD":"1.00","EUR":"1.00"}'::json"""),
-        ),
-    )
-    op.add_column(
-        "tenants",
-        sa.Column(
-            "transfer_fee_percent",
-            sa.Numeric(7, 4),
-            nullable=False,
-            server_default=sa.text("0.0000"),
-        ),
-    )
-    op.add_column(
-        "tenants",
-        sa.Column(
-            "primary_currency",
-            sa.String(3),
-            nullable=False,
-            server_default=sa.text("'COP'"),
-        ),
-    )
-    op.add_column(
-        "tenants",
-        sa.Column(
-            "supported_currencies",
-            sa.JSON(),
-            nullable=False,
-            server_default=sa.text("""'["COP","USD","EUR"]'::json"""),
-        ),
-    )
-    op.add_column(
-        "tenants",
-        sa.Column(
-            "exchange_rates",
-            sa.JSON(),
-            nullable=False,
-            server_default=sa.text(
-                """'{"COP/USD":"0.00025","USD/COP":"4000.00","EUR/COP":"4350.00","COP/EUR":"0.00023","USD/EUR":"0.92","EUR/USD":"1.09"}'::json"""
-            ),
-        ),
-    )
-    op.add_column("tenants", sa.Column("webhook_url", sa.String(500), nullable=True))
+    # IF NOT EXISTS makes the migration safe after ORM metadata bootstrap.
+    op.execute("""
+        ALTER TABLE tenants
+        ADD COLUMN IF NOT EXISTS max_transfer_amount NUMERIC(18, 2)
+        NOT NULL DEFAULT 5000000.00
+    """)
+    op.execute("""
+        ALTER TABLE tenants
+        ADD COLUMN IF NOT EXISTS transfer_fees JSON NOT NULL
+        DEFAULT '{"COP":"1500.00","USD":"1.00","EUR":"1.00"}'::json
+    """)
+    op.execute("""
+        ALTER TABLE tenants
+        ADD COLUMN IF NOT EXISTS transfer_fee_percent NUMERIC(7, 4)
+        NOT NULL DEFAULT 0.0000
+    """)
+    op.execute("""
+        ALTER TABLE tenants
+        ADD COLUMN IF NOT EXISTS primary_currency VARCHAR(3)
+        NOT NULL DEFAULT 'COP'
+    """)
+    op.execute("""
+        ALTER TABLE tenants
+        ADD COLUMN IF NOT EXISTS supported_currencies JSON NOT NULL
+        DEFAULT '["COP","USD","EUR"]'::json
+    """)
+    op.execute("""
+        ALTER TABLE tenants
+        ADD COLUMN IF NOT EXISTS exchange_rates JSON NOT NULL
+        DEFAULT '{"COP/USD":"0.00025","USD/COP":"4000.00","EUR/COP":"4350.00","COP/EUR":"0.00023","USD/EUR":"0.92","EUR/USD":"1.09"}'::json
+    """)
+    op.execute("""
+        ALTER TABLE tenants
+        ADD COLUMN IF NOT EXISTS webhook_url VARCHAR(500)
+    """)
 
 
 def downgrade() -> None:
-    op.drop_column("tenants", "webhook_url")
-    op.drop_column("tenants", "exchange_rates")
-    op.drop_column("tenants", "supported_currencies")
-    op.drop_column("tenants", "primary_currency")
-    op.drop_column("tenants", "transfer_fee_percent")
-    op.drop_column("tenants", "transfer_fees")
-    op.drop_column("tenants", "max_transfer_amount")
+    op.execute("ALTER TABLE tenants DROP COLUMN IF EXISTS webhook_url")
+    op.execute("ALTER TABLE tenants DROP COLUMN IF EXISTS exchange_rates")
+    op.execute("ALTER TABLE tenants DROP COLUMN IF EXISTS supported_currencies")
+    op.execute("ALTER TABLE tenants DROP COLUMN IF EXISTS primary_currency")
+    op.execute("ALTER TABLE tenants DROP COLUMN IF EXISTS transfer_fee_percent")
+    op.execute("ALTER TABLE tenants DROP COLUMN IF EXISTS transfer_fees")
+    op.execute("ALTER TABLE tenants DROP COLUMN IF EXISTS max_transfer_amount")
