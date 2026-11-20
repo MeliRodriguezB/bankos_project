@@ -91,11 +91,17 @@ def seed_database():
             user1 = User(
                 email="carlos@fintech.com",
                 password_hash=hash_password("123456"),
+                transaction_pin_hash=hash_password("1234"),
+                transaction_pin_failed_attempts=0,
                 full_name="Carlos Mendoza",
                 is_active=True
             )
             db.add(user1)
             db.flush()
+        elif not user1.transaction_pin_hash:
+            # PIN débil únicamente para facilitar la demostración local.
+            user1.transaction_pin_hash = hash_password("1234")
+            user1.transaction_pin_failed_attempts = 0
 
         # 4. Membresía de Carlos en Cooperativa Futuro
         membership1 = db.query(TenantMembership).filter(
