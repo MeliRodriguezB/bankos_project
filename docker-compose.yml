@@ -1,0 +1,64 @@
+# Local development stack for BankOS.
+# Never expose PostgreSQL/Redis publicly or reuse these development credentials.
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bankos_api
+    ports:
+      - "8000:8000"
+    environment:
+      ENVIRONMENT: development
+      DATABASE_URL: postgresql+psycopg://bankos_user:${POSTGRES_PASSWORD:-bankos_dev_password}@db:5432/bankos_db
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: ${SECRET_KEY:-bankos-development-secret-change-before-production}
+      SIMULATED_DEPOSITS_ENABLED: "true"
+      CORS_ORIGINS: '["http://localhost:3000","http://localhost:5173","http://localhost:8080","http://127.0.0.1:3000","http://127.0.0.1:5173","http://127.0.0.1:8080"]'
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    container_name: bankos_db
+    environment:
+      POSTGRES_DB: bankos_db
+      POSTGRES_USER: bankos_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bankos_dev_password}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - bankos_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bankos_user -d bankos_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: bankos_redis
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  bankos_postgres_data:
