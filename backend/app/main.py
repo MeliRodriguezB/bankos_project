@@ -72,10 +72,10 @@ def seed_database():
             if config is None:
                 db.add(BankConfiguration(
                     tenant_id=tenant.id,
-                primary_color=primary,
-                secondary_color=secondary,
-                accent_color=accent,
-            ))
+                    primary_color=primary,
+                    secondary_color=secondary,
+                    accent_color=accent,
+                ))
             else:
                 config.primary_color = primary
                 config.secondary_color = secondary
@@ -153,6 +153,50 @@ def seed_database():
                     role_id=role_customer.id
                 )
             )
+
+        # El usuario de demostración puede ingresar a los cuatro tenants.
+        # Se crea un rol CUSTOMER independiente por institución (los roles son tenant-scoped).
+        for tenant in (tenant2, tenant3, tenant4):
+            customer_role = db.query(Role).filter(
+                Role.tenant_id == tenant.id,
+                Role.code == "CUSTOMER",
+            ).first()
+            if customer_role is None:
+                customer_role = Role(
+                    tenant_id=tenant.id,
+                    code="CUSTOMER",
+                    name="Cliente Bancario",
+                    is_system=True,
+                )
+                db.add(customer_role)
+                db.flush()
+
+            demo_membership = db.query(TenantMembership).filter(
+                TenantMembership.tenant_id == tenant.id,
+                TenantMembership.user_id == user1.id,
+            ).first()
+            if demo_membership is None:
+                demo_membership = TenantMembership(
+                    tenant_id=tenant.id,
+                    user_id=user1.id,
+                    status="ACTIVE",
+                )
+                db.add(demo_membership)
+                db.flush()
+
+            role_assignment = db.execute(
+                membership_roles.select().where(
+                    membership_roles.c.tenant_id == tenant.id,
+                    membership_roles.c.membership_id == demo_membership.id,
+                    membership_roles.c.role_id == customer_role.id,
+                )
+            ).first()
+            if role_assignment is None:
+                db.execute(membership_roles.insert().values(
+                    tenant_id=tenant.id,
+                    membership_id=demo_membership.id,
+                    role_id=customer_role.id,
+                ))
 
         # Bootstrap administrativo opcional: nunca se crea una contraseña predeterminada.
         if settings.BOOTSTRAP_ADMIN_EMAIL and settings.BOOTSTRAP_ADMIN_PASSWORD:
@@ -257,6 +301,26 @@ def seed_database():
                 "tenant_id": str(tenant2.id),
                 "user_id": str(uuid.uuid4()),
                 "balance": Decimal("99999999.00"),
+                "currency": "COP",
+                "status": "ACTIVE",
+            },
+            {
+                "id": "acc-nequi-01",
+                "account_number": "7770001234",
+                "alias": "Cuenta Nequi",
+                "tenant_id": str(tenant3.id),
+                "user_id": str(user1.id),
+                "balance": Decimal("1250000.00"),
+                "currency": "COP",
+                "status": "ACTIVE",
+            },
+            {
+                "id": "acc-nu-01",
+                "account_number": "6660001234",
+                "alias": "Cuenta Nu",
+                "tenant_id": str(tenant4.id),
+                "user_id": str(user1.id),
+                "balance": Decimal("820000.00"),
                 "currency": "COP",
                 "status": "ACTIVE",
             },
