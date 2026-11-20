@@ -60,6 +60,24 @@ def update_tenant_config(
                 detail="No puedes excluir la moneda principal de las monedas soportadas.",
             )
 
+    supported = changes.get("supported_currencies", tenant.supported_currencies)
+    if "transfer_fees" in changes and any(
+        currency not in supported for currency in changes["transfer_fees"]
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail="Solo puedes configurar comisiones para monedas soportadas.",
+        )
+    if "exchange_rates" in changes and any(
+        currency not in supported
+        for pair in changes["exchange_rates"]
+        for currency in pair.split("/")
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail="Las tasas solo pueden utilizar monedas soportadas por la institución.",
+        )
+
     if "webhook_url" in changes and changes["webhook_url"] is not None:
         changes["webhook_url"] = str(changes["webhook_url"])
 
