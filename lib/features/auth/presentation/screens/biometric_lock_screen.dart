@@ -29,7 +29,7 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
         utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
       ) as Map<String, dynamic>;
       final roles = payload['roles'] as List<dynamic>? ?? [];
-      return roles.map((r => r.toString().toUpperCase()).contains('ADMIN');
+      return roles.map((r) => r.toString().toUpperCase()).contains('ADMIN');
     } catch (_) {
       return false;
     }
