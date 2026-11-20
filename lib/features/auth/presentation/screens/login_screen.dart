@@ -53,6 +53,8 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Color get _bankForeground => _selectedTenantSlug == 'bancolombia' ? const Color(0xFF222222) : Colors.white;
+
   String get _selectedBankName {
     switch (_selectedTenantSlug) {
       case 'bancolombia':
