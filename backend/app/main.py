@@ -266,6 +266,16 @@ def seed_database():
                 "currency": "COP",
                 "status": "ACTIVE",
             },
+            {
+                "id": "acc-tenant2-02",
+                "account_number": "8880005678",
+                "alias": "Cuenta secundaria Neobanco Ágil",
+                "tenant_id": str(tenant2.id),
+                "user_id": str(user1.id),
+                "balance": Decimal("250000.00"),
+                "currency": "COP",
+                "status": "ACTIVE",
+            },
         ]
 
         seed_demo_accounts(db, accounts_to_seed)
