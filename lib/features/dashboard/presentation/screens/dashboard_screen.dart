@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/network/session_storage.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../transactions/data/repositories/transaction_repository.dart';
@@ -109,9 +110,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _fetchDashboard();
   }
 
-  void _handleLogout() {
-    // Limpieza de sesión
+  Future<void> _handleLogout() async {
+    // Limpia el token en memoria y el almacenamiento seguro.
     ApiClient.setGlobalAuthToken(null);
+    await SessionStorage().clearToken();
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => const LoginScreen(),
