@@ -1,7 +1,7 @@
 from decimal import Decimal
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
 
 
 class TenantConfigUpdate(BaseModel):
@@ -12,6 +12,14 @@ class TenantConfigUpdate(BaseModel):
     supported_currencies: list[str] | None = Field(default=None, min_length=1)
     exchange_rates: dict[str, Decimal] | None = None
     webhook_url: HttpUrl | None = None
+
+    @model_validator(mode="after")
+    def reject_null_policy_values(self):
+        nullable_fields = {"webhook_url"}
+        for field_name in self.model_fields_set - nullable_fields:
+            if getattr(self, field_name) is None:
+                raise ValueError(f"{field_name} no puede ser null.")
+        return self
 
     @field_validator("primary_currency")
     @classmethod
