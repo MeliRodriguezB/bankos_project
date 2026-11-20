@@ -6,6 +6,7 @@ class QuickActionsBar extends StatelessWidget {
   final VoidCallback? onDeposit;
   final VoidCallback? onWithdraw;
   final VoidCallback? onHistory;
+  final Color bankColor;
 
   const QuickActionsBar({
     super.key,
@@ -13,35 +14,42 @@ class QuickActionsBar extends StatelessWidget {
     this.onDeposit,
     this.onWithdraw,
     this.onHistory,
+    this.bankColor = AppTheme.accent,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
+    return Wrap(
+      alignment: WrapAlignment.spaceAround,
+      spacing: 8,
+      runSpacing: 10,
       children: [
         _buildActionButton(
           context,
           icon: Icons.send_rounded,
           label: 'Transferir',
+          bankColor: bankColor,
           onTap: onTransfer ?? () => _showComingSoon(context, 'Transferencias (Persona 3)'),
         ),
         _buildActionButton(
           context,
           icon: Icons.add_circle_outline_rounded,
           label: 'Depositar',
+          bankColor: bankColor,
           onTap: onDeposit ?? () => _showComingSoon(context, 'Depósitos (Persona 3)'),
         ),
         _buildActionButton(
           context,
           icon: Icons.arrow_circle_down_rounded,
           label: 'Retirar',
+          bankColor: bankColor,
           onTap: onWithdraw ?? () => _showComingSoon(context, 'Retiros (Persona 3)'),
         ),
         _buildActionButton(
           context,
           icon: Icons.history_rounded,
           label: 'Historial',
+          bankColor: bankColor,
           onTap: onHistory ?? () => _showComingSoon(context, 'Historial (Persona 3)'),
         ),
       ],
@@ -52,6 +60,7 @@ class QuickActionsBar extends StatelessWidget {
     BuildContext context, {
     required IconData icon,
     required String label,
+    required Color bankColor,
     required VoidCallback onTap,
   }) {
     return InkWell(
@@ -59,7 +68,9 @@ class QuickActionsBar extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        child: Column(
+        child: SizedBox(
+          width: 78,
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
@@ -77,7 +88,7 @@ class QuickActionsBar extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Icon(icon, color: AppTheme.primary, size: 24),
+              child: Icon(icon, color: bankColor, size: 24),
             ),
             const SizedBox(height: 8),
             Text(
@@ -89,6 +100,7 @@ class QuickActionsBar extends StatelessWidget {
               ),
             ),
           ],
+          ),
         ),
       ),
     );
