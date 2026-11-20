@@ -66,9 +66,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return JSONResponse(
                 status_code=429,
                 content={
-                    "detail": "Has superado el límite de solicitudes. Intenta nuevamente en un minuto.",
-                    "code": "RATE_LIMIT_EXCEEDED",
-                    "correlation_id": correlation_id or None,
+                    "error": {
+                        "code": "RATE_LIMIT_EXCEEDED",
+                        "message": "Has superado el límite de solicitudes. Intenta nuevamente en un minuto.",
+                        "correlation_id": correlation_id or None,
+                    }
                 },
                 headers={"Retry-After": "60"},
             )
