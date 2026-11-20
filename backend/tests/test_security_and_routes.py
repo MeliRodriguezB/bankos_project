@@ -46,6 +46,7 @@ def test_openapi_registers_all_api_modules():
     assert "/api/v1/transactions/deposits" in paths
     assert "/api/v1/transactions/withdrawals" in paths
     assert "/api/v1/users/me/transaction-pin" in paths
+    assert "/api/v1/tenant/config" in paths
 
 
 
@@ -127,3 +128,33 @@ def test_unknown_exchange_pair_is_rejected():
     else:
         raise AssertionError("No se debe asumir una tasa 1:1 para divisas no configuradas")
 
+
+
+
+def test_tenant_configuration_schema_rejects_invalid_exchange_rate():
+    from pydantic import ValidationError
+    from app.modules.tenants.schemas import TenantConfigUpdate
+
+    try:
+        TenantConfigUpdate(exchange_rates={"COP/USD": "0"})
+    except ValidationError:
+        pass
+    else:
+        raise AssertionError("Las tasas de cambio deben ser positivas")
+
+
+def test_tenant_configuration_schema_accepts_fee_and_transfer_limit():
+    from decimal import Decimal
+    from app.modules.tenants.schemas import TenantConfigUpdate
+
+    config = TenantConfigUpdate(
+        max_transfer_amount=Decimal("2500000.00"),
+        transfer_fees={"COP": Decimal("1000.00")},
+        transfer_fee_percent=Decimal("0.0100"),
+        primary_currency="cop",
+        supported_currencies=["cop", "usd"],
+        exchange_rates={"COP/USD": Decimal("0.00025")},
+    )
+    assert config.primary_currency == "COP"
+    assert config.supported_currencies == ["COP", "USD"]
+    assert config.transfer_fee_percent == Decimal("0.0100")
