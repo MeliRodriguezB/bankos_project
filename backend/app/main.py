@@ -146,13 +146,20 @@ def seed_database():
             db.add(membership1)
             db.flush()
 
-            db.execute(
-                membership_roles.insert().values(
-                    tenant_id=tenant1.id,
-                    membership_id=membership1.id,
-                    role_id=role_customer.id
-                )
+        # Asegura el rol CUSTOMER incluso si la membresía ya existía.
+        customer_assignment = db.execute(
+            membership_roles.select().where(
+                membership_roles.c.tenant_id == tenant1.id,
+                membership_roles.c.membership_id == membership1.id,
+                membership_roles.c.role_id == role_customer.id,
             )
+        ).first()
+        if customer_assignment is None:
+            db.execute(membership_roles.insert().values(
+                tenant_id=tenant1.id,
+                membership_id=membership1.id,
+                role_id=role_customer.id,
+            ))
 
         # El usuario de demostración puede ingresar a los cuatro tenants.
         # Se crea un rol CUSTOMER independiente por institución (los roles son tenant-scoped).
