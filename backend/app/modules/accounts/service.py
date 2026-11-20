@@ -227,25 +227,27 @@ class AccountService:
 
         transaction_rows = db.query(
             Transaction.status,
+            Transaction.type,
             Transaction.currency,
             func.count(Transaction.id),
             func.sum(Transaction.amount),
         ).filter(
             Transaction.tenant_id == tenant_id,
         ).group_by(
-            Transaction.status, Transaction.currency
+            Transaction.status, Transaction.type, Transaction.currency
         ).order_by(
-            Transaction.status, Transaction.currency
+            Transaction.status, Transaction.type, Transaction.currency
         ).all()
 
         transaction_summary = [
             TenantAdminTransactionSummary(
                 status=tx_status,
+                type=tx_type,
                 currency=currency,
                 count=count,
                 total_amount=f"{(total or Decimal('0.00')):.2f}",
             )
-            for tx_status, currency, count, total in transaction_rows
+            for tx_status, tx_type, currency, count, total in transaction_rows
         ]
 
         transactions_total = db.query(Transaction).filter(
