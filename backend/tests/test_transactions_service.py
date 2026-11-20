@@ -223,3 +223,41 @@ def test_transaction_audit_record_cannot_be_modified(financial_db):
     with pytest.raises(ValueError, match="inmutables"):
         db.commit()
     db.rollback()
+
+
+
+def test_multicurrency_transfer_uses_tenant_rate_and_fee(financial_db):
+    db, tenant, user, _, destination = financial_db
+    usd_source = Account(
+        id="usd-source-account",
+        account_number="2000000001",
+        alias="USD source",
+        tenant_id=str(tenant.id),
+        user_id=str(user.id),
+        balance=Decimal("100.00"),
+        currency="USD",
+        status="ACTIVE",
+    )
+    db.add(usd_source)
+    db.commit()
+
+    request = TransferRequest(
+        source_account_id=usd_source.id,
+        destination_account_number=destination.account_number,
+        amount=Decimal("10.00"),
+        currency="USD",
+        pin="1234",
+        description="USD to COP",
+    )
+    result = TransactionService.process_transfer(
+        db, str(tenant.id), str(user.id), request,
+        "multicurrency-transfer-001", "corr-multicurrency"
+    )
+
+    db.refresh(usd_source)
+    db.refresh(destination)
+    assert result.exchange_rate == "4000.000000"
+    assert result.converted_amount == "40000.00"
+    assert result.fee_amount == "1.00"
+    assert usd_source.balance == Decimal("89.00")
+    assert destination.balance == Decimal("40000.00")
