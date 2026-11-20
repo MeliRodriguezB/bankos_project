@@ -51,3 +51,25 @@ Una colisión concurrente revierte la transacción contable y devuelve HTTP 409.
 ## Alcance de validación
 
 Las pruebas unitarias y de registro de rutas están automatizadas. Las pruebas reales contra PostgreSQL, Redis, concurrencia simultánea, flujo Flutter y credenciales deben ejecutarse en un entorno integrado antes de desplegar o fusionar a `develop`.
+
+
+## PIN personal de transacciones
+
+Cada usuario debe configurar su propio PIN de cuatro dígitos antes de transferir o retirar fondos:
+
+1. Autentícate y conserva el token Bearer.
+2. Consulta `GET /api/v1/users/me/transaction-pin` para conocer el estado.
+3. Configura o cambia el PIN mediante `PUT /api/v1/users/me/transaction-pin`, enviando `current_password` y `pin`.
+4. Incluye el PIN en las solicitudes de transferencia y retiro.
+
+El PIN se almacena como hash Argon2, nunca en texto plano. Cinco intentos incorrectos bloquean la autorización durante 15 minutos. No se asigna un PIN predeterminado a usuarios existentes.
+
+### Aplicar la migración de PIN
+
+Desde la carpeta `backend`, con la base de datos disponible:
+
+```powershell
+alembic upgrade head
+```
+
+La revisión añade las columnas de forma idempotente. Antes de aplicar migraciones en una base existente, realiza un respaldo. No elimines ni recrees el volumen de PostgreSQL. La inicialización actual con `Base.metadata.create_all` también crea las columnas en instalaciones nuevas.
