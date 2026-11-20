@@ -158,3 +158,13 @@ def test_tenant_configuration_schema_accepts_fee_and_transfer_limit():
     assert config.primary_currency == "COP"
     assert config.supported_currencies == ["COP", "USD"]
     assert config.transfer_fee_percent == Decimal("0.0100")
+
+
+
+def test_rate_limit_policies_cover_login_transactions_and_api():
+    from app.core.rate_limit import RateLimitMiddleware
+
+    assert RateLimitMiddleware._policy("/api/v1/auth/login") == ("login", 10)
+    assert RateLimitMiddleware._policy("/api/v1/transactions/transfers") == ("transactions", 30)
+    assert RateLimitMiddleware._policy("/api/v1/accounts") == ("api", 120)
+    assert RateLimitMiddleware._policy("/health") is None
